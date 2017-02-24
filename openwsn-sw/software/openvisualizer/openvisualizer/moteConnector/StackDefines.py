@@ -1,6 +1,6 @@
 # DO NOT EDIT DIRECTLY!
 # This file was generated automatically by GenStackDefines.py
-# on Thu, 09 Feb 2017 16:10:38
+# on Thu, 23 Feb 2017 14:43:32
 #
 
 components = {
@@ -44,7 +44,7 @@ components = {
   37: "RRT",
   38: "SECURITY",
   39: "USERIALBRIDGE",
-  40: "DENEME",
+  40: "COMI",
 }
 
 errorDescriptions = {
@@ -112,6 +112,7 @@ errorDescriptions = {
   62: "the cells reserved to request mote contains slot {0} and slot {1}",
   63: "the slot {0} to be added is already in schedule",
   64: "packet received rssi: {0} lqi: {1}",
+  65: "COMI message: {0}",
 }
 
 sixtop_returncode = {

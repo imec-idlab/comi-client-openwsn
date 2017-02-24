@@ -82,6 +82,7 @@ static const uint8_t rreg_uriquery[]        = "h=ucb";
 static const uint8_t infoBoardname[]        = "Z1";
 static const uint8_t infouCName[]           = "MSP430f2617";
 static const uint8_t infoRadioName[]        = "CC2420";
+static const uint8_t manufacturerName[] 	= "INTATION";
 
 //=========================== prototypes ======================================
 

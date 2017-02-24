@@ -204,6 +204,7 @@ void               schedule_indicateTx(
                    );
 
 void               schedule_housekeeping();
+void		       schedule_remove_allTXandRX_Cells();
 /**
 \}
 \}

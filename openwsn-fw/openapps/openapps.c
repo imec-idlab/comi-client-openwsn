@@ -38,7 +38,7 @@ void openapps_init(void) {
    cleds__init();
    comi.init();
    cstorm_init();
-   csensors_init();
+   //csensors_init();
    cwellknown_init();
    rrt_init();
    // TCP

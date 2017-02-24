@@ -280,7 +280,7 @@ owerror_t schedule_addActiveSlot(
    
    INTERRUPT_DECLARATION();
    DISABLE_INTERRUPTS();
-   
+
    // find an empty schedule entry container
    slotContainer = &schedule_vars.scheduleBuf[0];
    while (
@@ -308,6 +308,8 @@ owerror_t schedule_addActiveSlot(
    slotContainer->channelOffset             = channelOffset;
    memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
    
+   openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)type,(errorparameter_t)0);
+
    // insert in circular list
    if (schedule_vars.currentScheduleEntry==NULL) {
       // this is the first active slot added
@@ -851,6 +853,26 @@ void schedule_housekeeping(){
    
     ENABLE_INTERRUPTS();
 }
+
+void schedule_remove_allTXandRX_Cells(){
+    uint8_t     i;
+    INTERRUPT_DECLARATION();
+    DISABLE_INTERRUPTS();
+
+    for(i=0;i<MAXACTIVESLOTS;i++) {
+        if(schedule_vars.scheduleBuf[i].type == CELLTYPE_TX || schedule_vars.scheduleBuf[i].type == CELLTYPE_RX){
+        			schedule_removeActiveSlot(schedule_vars.scheduleBuf[i].slotOffset,&(schedule_vars.scheduleBuf[i].neighbor));
+        			openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)11,(errorparameter_t)0);
+        }
+        else{
+            		openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)12,(errorparameter_t)0);
+        }
+    }
+
+    ENABLE_INTERRUPTS();
+}
+
+
 
 //=========================== private =========================================
 

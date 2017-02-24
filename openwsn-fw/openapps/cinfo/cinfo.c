@@ -85,14 +85,19 @@ owerror_t cinfo_receive(
          //=== prepare  CoAP response
          
          // radio name
-         packetfunctions_reserveHeaderSize(msg,sizeof(infoRadioName)-1);
-         memcpy(&msg->payload[0],&infoRadioName,sizeof(infoRadioName)-1);
+       //  packetfunctions_reserveHeaderSize(msg,sizeof(infoRadioName)-1);
+       //  memcpy(&msg->payload[0],&infoRadioName,sizeof(infoRadioName)-1);
          
          // uC name
-         packetfunctions_reserveHeaderSize(msg,1);
-         msg->payload[0] = '\n';
-         packetfunctions_reserveHeaderSize(msg,sizeof(infouCName)-1);
-         memcpy(&msg->payload[0],&infouCName,sizeof(infouCName)-1);
+       //  packetfunctions_reserveHeaderSize(msg,1);
+       //  msg->payload[0] = '\n';
+       //  packetfunctions_reserveHeaderSize(msg,sizeof(infouCName)-1);
+       //  memcpy(&msg->payload[0],&infouCName,sizeof(infouCName)-1);
+
+
+         // manufacturer name
+         packetfunctions_reserveHeaderSize(msg,sizeof(manufacturerName)-1);
+         memcpy(&msg->payload[0],&manufacturerName,sizeof(manufacturerName)-1);
          
          // board name
          packetfunctions_reserveHeaderSize(msg,1);

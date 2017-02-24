@@ -75,6 +75,10 @@ uint8_t sixtop_getCelllist(
    cellInfo_ht*         cellList
 );
 
+uint8_t sixtop_getAllCelllist(
+   uint8_t             frameID,
+   cellInfo_ht*         cellList
+);
 //=== helper functions
 
 bool          sixtop_candidateAddCellList(
@@ -163,7 +167,12 @@ void sixtop_setEBPeriod(uint8_t ebPeriod) {
 }
 
 bool sixtop_setHandler(six2six_handler_t handler) {
-    if (sixtop_vars.handler == SIX_HANDLER_NONE){
+
+	if (handler == SIX_HANDLER_NONE){
+	        sixtop_vars.handler = handler;
+	        return TRUE;
+	}
+	else if (sixtop_vars.handler == SIX_HANDLER_NONE){
         sixtop_vars.handler = handler;
         return TRUE;
     } else {
@@ -184,6 +193,8 @@ void sixtop_request(uint8_t code, open_addr_t* neighbor, uint8_t numCells){
    
     memset(cellList,0,sizeof(cellList));
    
+
+    openserial_printInfo(COMPONENT_SIXTOP,ERR_AK_COMI,(errorparameter_t)0,(errorparameter_t)0);
     // filter parameters
     if(sixtop_vars.six2six_state!=SIX_STATE_IDLE){
         return;
@@ -1307,6 +1318,42 @@ uint8_t sixtop_getCelllist(
     ENABLE_INTERRUPTS();
     return i;
 }
+
+
+
+uint8_t sixtop_getAllCelllist(
+    uint8_t              frameID,
+    cellInfo_ht*         cellList
+    ){
+    uint8_t          i=0;
+    scheduleEntry_t* scheduleWalker;
+    scheduleEntry_t* currentEntry;
+
+    INTERRUPT_DECLARATION();
+    DISABLE_INTERRUPTS();
+
+    if (frameID != SCHEDULE_MINIMAL_6TISCH_DEFAULT_SLOTFRAME_HANDLE){
+        ENABLE_INTERRUPTS();
+        return 0;
+    }
+
+    memset(cellList,0,MAXACTIVESLOTS*sizeof(cellInfo_ht));
+
+    scheduleWalker = schedule_getCurrentScheduleEntry();
+    currentEntry   = scheduleWalker;
+    do {
+       cellList[i].tsNum        = scheduleWalker->slotOffset;
+       cellList[i].choffset     = scheduleWalker->channelOffset;
+       cellList[i].linkoptions  = scheduleWalker->type;
+       i++;
+       scheduleWalker = scheduleWalker->next;
+    }while(scheduleWalker!=currentEntry && i!=MAXACTIVESLOTS);
+
+    ENABLE_INTERRUPTS();
+    return i;
+}
+
+
 
 //======= helper functions
 

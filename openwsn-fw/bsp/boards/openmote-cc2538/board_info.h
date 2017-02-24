@@ -104,7 +104,7 @@ static const uint8_t rreg_uriquery[]        = "h=ucb";
 static const uint8_t infoBoardname[]        = "CC2538";
 static const uint8_t infouCName[]           = "CC2538";
 static const uint8_t infoRadioName[]        = "CC2538 SoC";
-
+static const uint8_t manufacturerName[] 	= "EGEMIN";
 //=========================== prototypes ======================================
 
 //=========================== public ==========================================

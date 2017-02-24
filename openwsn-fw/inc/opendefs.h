@@ -248,6 +248,7 @@ enum {
    ERR_SIXTOP_LIST                     = 0x3e, // the cells reserved to request mote contains slot {0} and slot {1}
    ERR_SCHEDULE_ADDDUPLICATESLOT       = 0x3f, // the slot {0} to be added is already in schedule
    ERR_AK_RECEIVED						= 0x40, // packet received rssi: {0} lqi: {1}
+   ERR_AK_COMI						= 0x41, // COMI message: {0}
 };
 
 //=========================== typedef =========================================
