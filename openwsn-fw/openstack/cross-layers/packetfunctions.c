@@ -389,7 +389,6 @@ void packetfunctions_calculateChecksum(OpenQueueEntry_t* msg, uint8_t* checksum_
    temp_checksum[1]  = 0;
    
    //===== IPv6 pseudo header
-   
    // source address (prefix and EUI64)
    onesComplementSum(temp_checksum,(idmanager_getMyID(ADDR_PREFIX))->prefix,8);
    onesComplementSum(temp_checksum,(idmanager_getMyID(ADDR_64B))->addr_64b,8);

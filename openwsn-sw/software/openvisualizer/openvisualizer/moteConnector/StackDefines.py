@@ -1,6 +1,6 @@
 # DO NOT EDIT DIRECTLY!
 # This file was generated automatically by GenStackDefines.py
-# on Thu, 23 Feb 2017 14:43:32
+# on Mon, 06 Mar 2017 16:08:44
 #
 
 components = {
@@ -45,6 +45,7 @@ components = {
   38: "SECURITY",
   39: "USERIALBRIDGE",
   40: "COMI",
+  41: "LWM2M",
 }
 
 errorDescriptions = {
@@ -113,6 +114,7 @@ errorDescriptions = {
   63: "the slot {0} to be added is already in schedule",
   64: "packet received rssi: {0} lqi: {1}",
   65: "COMI message: {0}",
+  66: "LWM2M message: {0} msg: {1}",
 }
 
 sixtop_returncode = {

@@ -2335,9 +2335,9 @@ void notif_receive(OpenQueueEntry_t* packetReceived) {
    // wake up the scheduler
    SCHEDULER_WAKEUP();
 
-   openserial_printInfo(COMPONENT_IEEE802154E,ERR_AK_RECEIVED,
-                                 (errorparameter_t)packetReceived->l1_rssi,
-                                 (errorparameter_t)packetReceived->l1_lqi);
+  // openserial_printInfo(COMPONENT_IEEE802154E,ERR_AK_RECEIVED,
+                               //  (errorparameter_t)packetReceived->l1_rssi,
+                               // (errorparameter_t)packetReceived->l1_lqi);
 }
 
 //======= stats

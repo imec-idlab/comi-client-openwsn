@@ -145,6 +145,7 @@ owerror_t forwarding_send(OpenQueueEntry_t* msg) {
     }else{
         next_header = IPHC_NH_INLINE;
     }
+
     iphc_prependIPv6Header(msg,
                 IPHC_TF_ELIDED,
                 flow_label, // value_flowlabel

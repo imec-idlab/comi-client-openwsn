@@ -104,6 +104,7 @@ typedef enum {
    COAP_MEDTYPE_APPJSON                = 50,
 } coap_media_type_t;
 
+
 //=========================== typedef =========================================
 
 typedef struct {
@@ -134,6 +135,8 @@ struct coap_resource_desc_t {
    uint8_t*              path0val;
    uint8_t               path1len;
    uint8_t*              path1val;
+   uint8_t               path2len;
+   uint8_t*              path2val;
    uint8_t               componentID;
    bool                  discoverable;
    callbackRx_cbt        callbackRx;
@@ -160,6 +163,7 @@ void          opencoap_sendDone(OpenQueueEntry_t* msg, owerror_t error);
 
 // from CoAP resources
 void          opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID);
+void 		  opencoap_writeObjects(OpenQueueEntry_t* msg, uint8_t componentID);
 void          opencoap_register(coap_resource_desc_t* desc);
 owerror_t     opencoap_send(
     OpenQueueEntry_t*     msg,

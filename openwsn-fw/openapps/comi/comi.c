@@ -47,6 +47,8 @@ void comi_init() {
    comi_vars.desc.path0val            = (uint8_t*)(&comi_path0);
    comi_vars.desc.path1len            = 0;
    comi_vars.desc.path1val            = NULL;
+   comi_vars.desc.path2len            = 0;
+   comi_vars.desc.path2val            = NULL;
    comi_vars.desc.componentID         = COMPONENT_COMI;
    comi_vars.desc.discoverable        = TRUE;
    comi_vars.desc.callbackRx          = &comi_receive;
@@ -71,6 +73,8 @@ void comi_resource_register(
 	comi_vars->comi_celllist.desc.path0val   = (uint8_t*)(&comi_path0);
 	comi_vars->comi_celllist.desc.path1len   = sizeof(comi_cellist_path1)-1;
 	comi_vars->comi_celllist.desc.path1val   = (uint8_t*)(&comi_cellist_path1);
+	comi_vars->comi_celllist.desc.path1len   = 0;
+	comi_vars->comi_celllist.desc.path1val   = NULL;
 	comi_vars->comi_celllist.desc.componentID      = COMPONENT_COMI;
 	comi_vars->comi_celllist.desc.discoverable     = TRUE;
 	comi_vars->comi_celllist.desc.callbackRx       = &comi_receive;
@@ -144,9 +148,6 @@ owerror_t comi_receive(
             		}
             	}
             	else{
-            		openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)0,(errorparameter_t)0);
-
-
                     uint8_t text_message[] 	= "11";
                     packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
                     msg->payload[0] = COAP_PAYLOAD_MARKER;

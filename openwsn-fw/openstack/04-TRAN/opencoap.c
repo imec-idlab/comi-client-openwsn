@@ -135,7 +135,30 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       
       // iterate until matching resource found, or no match
       while (found==FALSE) {
-         if (
+    	  if (
+    	                 coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
+    	                 coap_options[1].type==COAP_OPTION_NUM_URIPATH    &&
+    	                 temp_desc->path0len>0                            &&
+    	                 temp_desc->path0val!=NULL                        &&
+    	                 temp_desc->path1len>0                            &&
+    	                 temp_desc->path1val!=NULL                        &&
+    	                 temp_desc->path2len>0                            &&
+    	                 temp_desc->path2val!=NULL
+    	              ) {
+    	              // resource has a path of form path0/path1/path2
+
+    	              if (
+    	                    coap_options[0].length==temp_desc->path0len                               &&
+    	                    memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
+    	                    coap_options[1].length==temp_desc->path1len                               &&
+    	                    memcmp(coap_options[1].pValue,temp_desc->path1val,temp_desc->path1len)==0 &&
+    	                    coap_options[2].length==temp_desc->path2len                               &&
+    	                    memcmp(coap_options[2].pValue,temp_desc->path2val,temp_desc->path2len)==0
+    	                 ) {
+    	                 found = TRUE;
+    	              };
+
+    	  } else if (
                coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
                coap_options[1].type==COAP_OPTION_NUM_URIPATH    &&
                temp_desc->path0len>0                            &&
@@ -361,6 +384,15 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = '>';
          
+
+         // write path2
+         if (temp_resource->path2len>0) {
+             packetfunctions_reserveHeaderSize(msg,temp_resource->path2len);
+             memcpy(&msg->payload[0],temp_resource->path2val,temp_resource->path2len);
+             packetfunctions_reserveHeaderSize(msg,1);
+             msg->payload[0] = '/';
+         }
+
          // write path1
          if (temp_resource->path1len>0) {
             packetfunctions_reserveHeaderSize(msg,temp_resource->path1len);
@@ -388,6 +420,54 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
       temp_resource = temp_resource->next;
    }
 }
+
+
+
+//===== from CoAP resources
+
+/**
+\brief Writes the links with certain path number
+*/
+void opencoap_writeObjects(OpenQueueEntry_t* msg, uint8_t componentID) {
+   coap_resource_desc_t* temp_resource;
+
+   // start with the first resource in the linked list
+   temp_resource = opencoap_vars.resources;
+
+   // iterate through all resources
+   while (temp_resource!=NULL) {
+
+      if (
+            (temp_resource->discoverable==TRUE) && (componentID==temp_resource->componentID)
+         ) {
+         // write path2
+         if (temp_resource->path2len==0 && temp_resource->path1len==0) {
+             // write ending '>'
+             packetfunctions_reserveHeaderSize(msg,1);
+             msg->payload[0] = '>';
+
+             packetfunctions_reserveHeaderSize(msg,2);
+             msg->payload[1] = '0';
+             msg->payload[0] = '/';
+
+             // write path0
+             packetfunctions_reserveHeaderSize(msg,temp_resource->path0len);
+             memcpy(msg->payload,temp_resource->path0val,temp_resource->path0len);
+             packetfunctions_reserveHeaderSize(msg,2);
+             msg->payload[1] = '/';
+
+             // write opening '>'
+             msg->payload[0] = '<';
+             temp_resource=NULL;
+         }
+      }
+      if(temp_resource!=NULL){
+		  // iterate to next resource
+		  temp_resource = temp_resource->next;
+      }
+   }
+}
+
 
 /**
 \brief Register a new CoAP resource.
@@ -450,12 +530,11 @@ owerror_t opencoap_send(
    uint16_t token;
    uint8_t tokenPos=0;
    coap_header_iht* request;
-   
    // increment the (global) messageID
    if (opencoap_vars.messageID++ == 0xffff) {
       opencoap_vars.messageID = 0;
    }
-   
+
    // take ownership over the packet
    msg->owner                       = COMPONENT_OPENCOAP;
    
@@ -468,13 +547,12 @@ owerror_t opencoap_send(
    request->Code                    = code;
    request->messageID               = opencoap_vars.messageID;
    request->TKL                     = TKL<COAP_MAX_TKL ? TKL : COAP_MAX_TKL;
-   
+
    while (tokenPos<request->TKL) {
        token = openrandom_get16b();
        memcpy(&request->token[tokenPos],&token,2);
        tokenPos+=2;
    }
-   
    // pre-pend CoAP header (version,type,TKL,code,messageID,Token)
    packetfunctions_reserveHeaderSize(msg,4+request->TKL);
    msg->payload[0]                  = (COAP_VERSION   << 6) |
@@ -485,7 +563,7 @@ owerror_t opencoap_send(
    msg->payload[3]                  = (request->messageID>>0) & 0xff;
 
    memcpy(&msg->payload[4],&token,request->TKL);
-   
+
    return openudp_send(msg);
 }
 

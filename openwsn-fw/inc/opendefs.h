@@ -168,6 +168,10 @@ enum {
    COMPONENT_SECURITY                  = 0x26,
    COMPONENT_USERIALBRIDGE             = 0x27,
    COMPONENT_COMI                 	   = 0x28,
+   COMPONENT_LWM2M			             = 0x29,
+   COMPONENT_LWM2M_DEVICE               = 0x30,
+   COMPONENT_LWM2M_TEMP                = 0x31,
+   COMPONENT_LWM2M_HUM                = 0x32,
 };
 
 /**
@@ -249,6 +253,7 @@ enum {
    ERR_SCHEDULE_ADDDUPLICATESLOT       = 0x3f, // the slot {0} to be added is already in schedule
    ERR_AK_RECEIVED						= 0x40, // packet received rssi: {0} lqi: {1}
    ERR_AK_COMI						= 0x41, // COMI message: {0}
+   ERR_AK_LWM2M						= 0x42, // LWM2M message: {0} msg: {1}
 };
 
 //=========================== typedef =========================================

@@ -46,6 +46,8 @@ void cinfo_init() {
    cinfo_vars.desc.path0val             = (uint8_t*)(&cinfo_path0);
    cinfo_vars.desc.path1len             = 0;
    cinfo_vars.desc.path1val             = NULL;
+   cinfo_vars.desc.path2len             = 0;
+   cinfo_vars.desc.path2val             = NULL;
    cinfo_vars.desc.componentID          = COMPONENT_CINFO;
    cinfo_vars.desc.discoverable         = TRUE;
    cinfo_vars.desc.callbackRx           = &cinfo_receive;

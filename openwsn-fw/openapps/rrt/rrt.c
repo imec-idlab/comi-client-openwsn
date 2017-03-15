@@ -54,6 +54,8 @@ void rrt_init() {
    rrt_vars.desc.path0val             = (uint8_t*)(&rrt_path0);
    rrt_vars.desc.path1len             = 0;
    rrt_vars.desc.path1val             = NULL;
+   rrt_vars.desc.path2len             = 0;
+   rrt_vars.desc.path2val             = NULL;
    rrt_vars.desc.componentID          = COMPONENT_RRT;
    rrt_vars.desc.discoverable         = TRUE;
    rrt_vars.desc.callbackRx           = &rrt_receive;

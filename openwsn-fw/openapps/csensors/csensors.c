@@ -84,6 +84,8 @@ void csensors_init() {
    csensors_vars.desc.path0val               = (uint8_t*)(&csensors_path0);
    csensors_vars.desc.path1len               = 0;
    csensors_vars.desc.path1val               = NULL;
+   csensors_vars.desc.path2len               = 0;
+   csensors_vars.desc.path2val               = NULL;
    csensors_vars.desc.componentID            = COMPONENT_CSENSORS;
    csensors_vars.desc.discoverable           = TRUE;
    csensors_vars.desc.callbackRx             = &csensors_receive;

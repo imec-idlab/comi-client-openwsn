@@ -32,17 +32,18 @@
 
 void openapps_init(void) {
    // CoAP
-   c6t_init();
-   cinfo_init();
-   cexample_init();
-   cleds__init();
-   comi.init();
-   cstorm_init();
+  // c6t_init();
+ //  cinfo_init();
+  // cexample_init();
+  // cleds__init();
+   //cstorm_init();
    //csensors_init();
    cwellknown_init();
-   rrt_init();
+  // rrt_init();
    // TCP
    techo_init();
+   comi_init();
+   lwm2m_init();
    // UDP
 //   uecho_init();
 }

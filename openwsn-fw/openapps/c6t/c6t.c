@@ -42,6 +42,8 @@ void c6t_init() {
    c6t_vars.desc.path0val            = (uint8_t*)(&c6t_path0);
    c6t_vars.desc.path1len            = 0;
    c6t_vars.desc.path1val            = NULL;
+   c6t_vars.desc.path2len            = 0;
+   c6t_vars.desc.path2val            = NULL;
    c6t_vars.desc.componentID         = COMPONENT_C6T;
    c6t_vars.desc.discoverable        = TRUE;
    c6t_vars.desc.callbackRx          = &c6t_receive;

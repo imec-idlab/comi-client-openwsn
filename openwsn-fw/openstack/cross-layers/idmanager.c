@@ -246,6 +246,23 @@ void idmanager_triggerAboutRoot() {
    return;
 }
 
+
+void idmanager_triggerRoot(open_addr_t* myPrefix) {
+   uint8_t         dodagid[16];
+
+   idmanager_setIsDAGroot(TRUE);
+   idmanager_vars.slotSkip = FALSE;
+
+   idmanager_setMyID(myPrefix);
+
+   // indicate DODAGid to RPL
+   memcpy(&dodagid[0],idmanager_vars.myPrefix.prefix,8);  // prefix
+   memcpy(&dodagid[8],idmanager_vars.my64bID.addr_64b,8); // eui64
+   icmpv6rpl_writeDODAGid(dodagid);
+
+   return;
+}
+
 /**
 \brief Trigger this module to print status information, over serial.
 

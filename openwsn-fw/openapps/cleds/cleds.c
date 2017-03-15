@@ -37,6 +37,8 @@ void cleds__init() {
    cleds_vars.desc.path0val            = (uint8_t*)(&cleds_path0);
    cleds_vars.desc.path1len            = 0;
    cleds_vars.desc.path1val            = NULL;
+   cleds_vars.desc.path2len            = 0;
+   cleds_vars.desc.path2val            = NULL;
    cleds_vars.desc.componentID         = COMPONENT_CLEDS;
    cleds_vars.desc.discoverable        = TRUE;
    cleds_vars.desc.callbackRx          = &cleds_receive;

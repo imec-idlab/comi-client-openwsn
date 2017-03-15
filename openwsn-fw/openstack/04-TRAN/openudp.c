@@ -26,10 +26,9 @@ owerror_t openudp_send(OpenQueueEntry_t* msg) {
     msg->l4_protocol = IANA_UDP;
     msg->l4_payload  = msg->payload;
     msg->l4_length   = msg->length;
-    
     msg->l4_protocol_compressed = FALSE; // by default
     uint8_t compType = NHC_UDP_PORTS_INLINE;
-
+    
     //check if the header can be compressed.
     if (msg->l4_destination_port>=0xf000 && msg->l4_destination_port<0xf100){
         // destination can be compressed 8 bit
@@ -117,6 +116,7 @@ owerror_t openudp_send(OpenQueueEntry_t* msg) {
         //TODO check this as the lenght MUST be ommited.
         packetfunctions_htons(msg->length,&(msg->payload[4]));
         packetfunctions_calculateChecksum(msg,(uint8_t*)&(((udp_ht*)msg->payload)->checksum));
+
     }
     return forwarding_send(msg);
 }

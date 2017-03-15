@@ -36,6 +36,8 @@ void cwellknown_init() {
    cwellknown_vars.desc.path0val            = (uint8_t*)(&cwellknown_path0);
    cwellknown_vars.desc.path1len            = sizeof(cwellknown_path1)-1;
    cwellknown_vars.desc.path1val            = (uint8_t*)(&cwellknown_path1);
+   cwellknown_vars.desc.path2len            = 0;
+   cwellknown_vars.desc.path2val            = NULL;
    cwellknown_vars.desc.componentID         = COMPONENT_CWELLKNOWN;
    cwellknown_vars.desc.discoverable        = FALSE;
    cwellknown_vars.desc.callbackRx          = &cwellknown_receive;
