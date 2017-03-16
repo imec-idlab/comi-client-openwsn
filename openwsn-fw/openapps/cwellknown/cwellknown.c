@@ -55,6 +55,7 @@ owerror_t cwellknown_receive(
    ) {
    owerror_t outcome;
    
+
    switch(coap_header->Code) {
       case COAP_CODE_REQ_GET:
          // reset packet payload
@@ -74,7 +75,8 @@ owerror_t cwellknown_receive(
          
          // set the CoAP header
          coap_header->Code   = COAP_CODE_RESP_CONTENT;
-         
+
+     	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)1,(errorparameter_t)1);
          outcome             = E_SUCCESS;
          
          break;

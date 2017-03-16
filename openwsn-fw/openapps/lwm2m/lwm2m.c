@@ -16,24 +16,30 @@
 #include "icmpv6rpl.h"
 #include "opensensors.h"
 #include "sensors.h"
+#include "leds.h"
 #include "IEEE802154E.h"
 
 
 //=========================== defines =========================================
+
+const   uint8_t endpoint[] = "?ep=L1";
+#define LESHANPERIOD  50000
+
 const 	uri_t URI_oma_device_object[] = "3";
 const	uri_t URI_ipso_temp_object[] = "3303";
 const	uri_t URI_ipso_hum_object[] = "3304";
-
-#define LESHANPERIOD  100000
+const	uri_t URI_ipso_led_object[] = "3311";
 
 static const 	uri_t OMA_instance_id[]="0";
 static const 	uri_t URI_oma_res_sensor_value[] = "5700";
 static const 	uri_t URI_oma_res_sensor_units[] = "5701";
 static const 	uri_t URI_oma_res_min_range_value[] = "5603";
 static const 	uri_t URI_oma_res_max_range_value[] = "5604";
+static const 	uri_t URI_oma_res_on_off_value[] = "5850";
 static const 	uri_t URI_oma_res_manufacturer[] = "0";
 static const 	uri_t URI_oma_res_model_number[] = "3";
 static const 	uri_t URI_oma_rd[] = "rd";
+
 
 static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
                                         0x95, 0xf7, 0xb7, 0x88, 0x2c, 0x00, 0xdd, 0x4e};
@@ -44,7 +50,6 @@ static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80,
 //=========================== variables =======================================
 
 lwm2m_server_t lwm2m_server;
-uint8_t tempSensorId;
 
 //=========================== prototypes ======================================
 
@@ -60,21 +65,11 @@ void lwm2m_init() {
    int i;
 
    lwm2m_device_register(&(lwm2m_server.device_object));
-   lwm2m_temp_register(&(lwm2m_server.temp_objects));
-   lwm2m_hum_register(&(lwm2m_server.hum_objects));
+ //  lwm2m_temp_register(&(lwm2m_server.temp_objects));
+ //  lwm2m_hum_register(&(lwm2m_server.hum_objects));
+   lwm2m_led_register(&(lwm2m_server.led_objects));
 
    opensensors_init();
-  // uint8_t numSensors;
-   //numSensors = opensensors_getNumSensors();
-   //for(i=0;i<numSensors;i++) {
-	//   opensensors_resource_desc_t* opensensors_resource  = opensensors_getResource(i);
-//	   if (opensensors_resource->sensorType==SENSOR_TEMPERATURE) {
-//		   tempSensorId=i;
-	//	   lwm2m_temp_register(&ipso_temp_object);
-	////	   i=numSensors;
-	//	   openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)44,(errorparameter_t)2);
-	//   }
-   //}
 
    lwm2m_server.desc.path0len   = sizeof(URI_oma_rd)-1;
    lwm2m_server.desc.path0val   = (uint8_t*)(&URI_oma_rd);
@@ -268,6 +263,42 @@ void lwm2m_hum_register(
 	ipso_object->min_range_value.desc.callbackSendDone = &lwm2m_sendDone;
 	opencoap_register(&ipso_object->min_range_value.desc);
 }
+
+
+
+/**
+   \brief
+*/
+void lwm2m_led_register(
+		IPSO_Light_Object* ipso_object) {
+
+	ipso_object->desc.path0len   = sizeof(URI_ipso_led_object)-1;
+	ipso_object->desc.path0val   = (uint8_t*)(&URI_ipso_led_object);
+	ipso_object->desc.path1len   = 0;
+	ipso_object->desc.path1val   = NULL;
+	ipso_object->desc.path2len   = 0;
+	ipso_object->desc.path2val   = NULL;
+	ipso_object->desc.componentID      = COMPONENT_LWM2M_LED;
+	ipso_object->desc.discoverable     = TRUE;
+	ipso_object->desc.callbackRx       = &lwm2m_led_receive;
+	ipso_object->desc.callbackSendDone = &lwm2m_sendDone;
+	opencoap_register(&ipso_object->desc);
+
+	ipso_object->on_off_res.desc.path0len   = sizeof(URI_ipso_led_object)-1;
+	ipso_object->on_off_res.desc.path0val   = (uint8_t*)(&URI_ipso_led_object);
+	ipso_object->on_off_res.desc.path1len   = sizeof(OMA_instance_id)-1;
+	ipso_object->on_off_res.desc.path1val   = (uint8_t*)(&OMA_instance_id);
+	ipso_object->on_off_res.desc.path2len   = sizeof(URI_oma_res_on_off_value)-1;
+	ipso_object->on_off_res.desc.path2val   = (uint8_t*)(&URI_oma_res_on_off_value);
+	ipso_object->on_off_res.desc.componentID      = COMPONENT_LWM2M_LED;
+	ipso_object->on_off_res.desc.discoverable     = TRUE;
+	ipso_object->on_off_res.desc.callbackRx       = &lwm2m_led_receive;
+	ipso_object->on_off_res.desc.callbackSendDone = &lwm2m_sendDone;
+	opencoap_register(&ipso_object->on_off_res.desc);
+}
+
+
+
 /**
 \brief Receives a command and a list of items to be used by the command.
 
@@ -683,6 +714,134 @@ owerror_t lwm2m_hum_receive(
 }
 
 
+
+
+/**
+\brief Receives a command and a list of items to be used by the command.
+
+\param[in] msg          The received message. CoAP header and options already
+   parsed.
+\param[in] coap_header  The CoAP header contained in the message.
+\param[in] coap_options The CoAP options contained in the message.
+
+\return Whether the response is prepared successfully.
+*/
+owerror_t lwm2m_led_receive(
+      OpenQueueEntry_t* msg,
+      coap_header_iht*  coap_header,
+      coap_option_iht*  coap_options
+   ) {
+
+   owerror_t            outcome;
+   switch (coap_header->Code) {
+
+   	   case COAP_CODE_REQ_GET:
+            // reset packet payload
+            msg->payload                     = &(msg->packet[127]);
+            msg->length                      = 0;
+            if (coap_options[1].type != COAP_OPTION_NUM_URIPATH) {
+
+                        // have CoAP module write links to lwm2m resources
+                        opencoap_writeLinks(msg,COMPONENT_LWM2M_LED);
+
+                        packetfunctions_reserveHeaderSize(msg,1);
+                        msg->payload[0]     = COAP_PAYLOAD_MARKER;
+
+                        // add return option
+                        packetfunctions_reserveHeaderSize(msg,2);
+                        msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
+                        msg->payload[1]     = COAP_MEDTYPE_APPLINKFORMAT;
+            }else{
+
+            	if (memcmp(coap_options[1].pValue,
+            	            							OMA_instance_id ,
+            											sizeof(OMA_instance_id)-1
+            	            					                  )==0
+            	            					                  ) {
+					if (memcmp(coap_options[2].pValue,
+							lwm2m_server.led_objects.on_off_res.desc.path2val ,
+							lwm2m_server.led_objects.on_off_res.desc.path2len
+									  )==0
+									  ) {
+						uint8_t  value=leds_error_isOn();
+						if (value>0){
+							uint8_t text_message[]="1";
+							packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
+							msg->payload[0] = COAP_PAYLOAD_MARKER;
+							memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+						}
+						else{
+							uint8_t text_message[]="0";
+							packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
+							msg->payload[0] = COAP_PAYLOAD_MARKER;
+							memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+						}
+					}
+					else{
+						uint8_t text_message[] 	= "Resource not supported";
+						packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
+						msg->payload[0] = COAP_PAYLOAD_MARKER;
+						memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+					}
+            	}else{
+
+            		uint8_t text_message[] 	= "Instance does not exist!";
+            								packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
+            								msg->payload[0] = COAP_PAYLOAD_MARKER;
+            								memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+            	}
+            }
+
+            // content-type option
+                        packetfunctions_reserveHeaderSize(msg,2);
+                        msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
+                           1;
+                        msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
+            // set the CoAP header
+            coap_header->Code                = COAP_CODE_RESP_CONTENT;
+            outcome                          = E_SUCCESS;
+            break;
+   	   case COAP_CODE_REQ_PUT:
+
+     	  if (coap_options[1].type == COAP_OPTION_NUM_URIPATH) {
+
+     		  if (memcmp(coap_options[1].pValue,OMA_instance_id ,sizeof(OMA_instance_id)-1)==0) {
+     	                  if ( memcmp(coap_options[2].pValue,lwm2m_server.led_objects.on_off_res.desc.path2val, lwm2m_server.led_objects.on_off_res.desc.path2len)==0
+     	                          ) {
+
+     								  uint8_t text[] 	= "0";
+									  if (memcmp(&msg->payload[0],text,sizeof(text)-1)==0) {
+										  leds_error_off();
+									  }
+									  else {
+										  leds_error_on();
+									  }
+     	                  	  	  }
+     	      }
+
+ 	  	  }else {
+
+     	  }
+
+          // reset packet payload
+          msg->payload                  = &(msg->packet[127]);
+          msg->length                   = 0;
+
+          // set the CoAP header
+          coap_header->Code             = COAP_CODE_RESP_CHANGED;
+
+          outcome                       = E_SUCCESS;
+   		   break;
+      default:
+         outcome = E_FAIL;
+         break;
+   }
+
+   return outcome;
+}
+
+
+
 //timer fired, but we don't want to execute task in ISR mode
 //instead, push task to scheduler with COAP priority, and let scheduler take care of it
 void lwm2m_register_server_cb(opentimer_id_t id){
@@ -693,13 +852,13 @@ void lwm2m_register_server_cb(opentimer_id_t id){
 		 return;
 	 }
 		 scheduler_push_task(lwm2m_register_server,TASKPRIO_COAP);
+		 scheduler_push_task(lwm2m_simple_register_rd,TASKPRIO_COAP);
 }
 
 void lwm2m_register_server() {
-
+	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)76,(errorparameter_t)0);
       OpenQueueEntry_t* pkt;
       owerror_t outcome;
-      uint8_t endpoint[] = "ep=S1";
 
       uint8_t numOptions;
 
@@ -725,7 +884,7 @@ void lwm2m_register_server() {
       // write separator between links
 
 
-     char id[]= "</3303/0>,</3/0>";
+     char id[]= "</3311/0>,</3/0>";
      packetfunctions_reserveHeaderSize(pkt,sizeof(id)-1);
      memcpy(&pkt->payload[0],&id,sizeof(id)-1);
      packetfunctions_reserveHeaderSize(pkt,1);
@@ -773,6 +932,76 @@ void lwm2m_register_server() {
         openqueue_freePacketBuffer(pkt);
       }
 }
+
+void lwm2m_simple_register_rd() {
+
+	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)76,(errorparameter_t)1);
+
+      OpenQueueEntry_t* pkt;
+      owerror_t outcome;
+
+      uint8_t numOptions;
+
+      pkt = openqueue_getFreePacketBuffer(COMPONENT_LWM2M);
+      if (pkt == NULL) {
+          openserial_printError(COMPONENT_LWM2M,ERR_BUSY_SENDING,
+                                (errorparameter_t)0,
+                                (errorparameter_t)0);
+          openqueue_freePacketBuffer(pkt);
+          return;
+      }
+
+      pkt->creator   = COMPONENT_LWM2M;
+      pkt->owner      = COMPONENT_LWM2M;
+      pkt->l4_protocol  = IANA_UDP;
+
+      numOptions=0;
+
+      uri_t URI_rd_wellknown[] = ".well-known";
+      uri_t URI_rd_wellknown_core[] = "core";
+
+      // query option
+      packetfunctions_reserveHeaderSize(pkt,sizeof(endpoint)-1);
+      memcpy(&pkt->payload[0],&endpoint,sizeof(endpoint)-1);
+      packetfunctions_reserveHeaderSize(pkt,1);
+      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIPATH) << 4 |
+         ((sizeof(endpoint))-1);
+
+      // location-path option
+      packetfunctions_reserveHeaderSize(pkt,sizeof(URI_rd_wellknown_core)-1);
+      memcpy(&pkt->payload[0],&URI_rd_wellknown_core,sizeof(URI_rd_wellknown_core)-1);
+      packetfunctions_reserveHeaderSize(pkt,1);
+      pkt->payload[0] = (COAP_OPTION_NUM_URIPATH-COAP_OPTION_NUM_URIPATH) << 4 |
+         (sizeof(URI_rd_wellknown_core)-1);
+      numOptions++;
+
+      // location-path option
+      packetfunctions_reserveHeaderSize(pkt,sizeof(URI_rd_wellknown)-1);
+      memcpy(&pkt->payload[0],&URI_rd_wellknown,sizeof(URI_rd_wellknown)-1);
+      packetfunctions_reserveHeaderSize(pkt,1);
+      pkt->payload[0] = (COAP_OPTION_NUM_URIPATH) << 4 |
+         (sizeof(URI_rd_wellknown)-1);
+      numOptions++;
+
+      pkt->l4_destination_port   = WKP_UDP_COAP;
+      pkt->l4_sourcePortORicmpv6Type   = WKP_UDP_COAP;
+      pkt->l3_destinationAdd.type = ADDR_128B;
+      // set destination address here
+      memcpy(&pkt->l3_destinationAdd.addr_128b[0], &ipAddr_lwm2mserver, 16);
+      //send
+      outcome = opencoap_send(
+              pkt,
+              COAP_TYPE_CON,
+			  COAP_CODE_REQ_POST,
+			  numOptions,
+              &(lwm2m_server.desc)
+              );
+
+      if (outcome == E_FAIL) {
+        openqueue_freePacketBuffer(pkt);
+      }
+}
+
 
 void lwm2m_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
    openqueue_freePacketBuffer(msg);

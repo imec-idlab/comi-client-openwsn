@@ -172,6 +172,7 @@ enum {
    COMPONENT_LWM2M_DEVICE               = 0x30,
    COMPONENT_LWM2M_TEMP                = 0x31,
    COMPONENT_LWM2M_HUM                = 0x32,
+   COMPONENT_LWM2M_LED                = 0x33,
 };
 
 /**

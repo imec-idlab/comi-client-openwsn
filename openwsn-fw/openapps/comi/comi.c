@@ -73,8 +73,8 @@ void comi_resource_register(
 	comi_vars->comi_celllist.desc.path0val   = (uint8_t*)(&comi_path0);
 	comi_vars->comi_celllist.desc.path1len   = sizeof(comi_cellist_path1)-1;
 	comi_vars->comi_celllist.desc.path1val   = (uint8_t*)(&comi_cellist_path1);
-	comi_vars->comi_celllist.desc.path1len   = 0;
-	comi_vars->comi_celllist.desc.path1val   = NULL;
+	comi_vars->comi_celllist.desc.path2len   = 0;
+	comi_vars->comi_celllist.desc.path2val   = NULL;
 	comi_vars->comi_celllist.desc.componentID      = COMPONENT_COMI;
 	comi_vars->comi_celllist.desc.discoverable     = TRUE;
 	comi_vars->comi_celllist.desc.callbackRx       = &comi_receive;

@@ -368,6 +368,8 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
    // start with the first resource in the linked list
    temp_resource = opencoap_vars.resources;
    
+   bool is_write=false;
+
    // iterate through all resources
    while (temp_resource!=NULL) {
       
@@ -379,7 +381,15 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
                ((componentID==temp_resource->componentID) && (temp_resource->path1len!=0))
             )
          ) {
-          
+          if(is_write!=false){
+              // write separator between links
+                 packetfunctions_reserveHeaderSize(msg,1);
+                 msg->payload[0] = ',';
+
+          }
+          else{
+    	  is_write=true;
+          }
          // write ending '>'
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = '>';
@@ -410,12 +420,8 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
          // write opening '>'
          msg->payload[0] = '<';
          
-         // write separator between links
-         if (temp_resource->next!=NULL) {
-            packetfunctions_reserveHeaderSize(msg,1);
-            msg->payload[0] = ',';
          }
-      }
+
       // iterate to next resource
       temp_resource = temp_resource->next;
    }
