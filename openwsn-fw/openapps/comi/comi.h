@@ -23,21 +23,15 @@
 //=========================== define ==========================================
 
 
-#define NUMCELLS 100
+#define NUMCELLS 11
 //=========================== typedef =========================================
 typedef uint8_t clotframeid_t;
 typedef uint8_t clotframeid_t;
-typedef uint8_t nodeaddress_t;
 typedef uint32_t sid_t;
 typedef enum {
    LINK_NORMAL                  = 0,
    LINK_ADVERTISING             = 1,
 } linktype_t;
-
-typedef enum {
-   LINK_SOFT                 	= 0,
-   LINK_HARD             		= 1,
-} celltype_t;
 
 typedef struct {
    uint8_t numofstatistics;
@@ -50,8 +44,8 @@ typedef struct {
    uint16_t slotoffset;
    uint16_t channeloffset;
    linktype_t linktype;
-   celltype_t celltype;
-   nodeaddress_t nodeaddress;
+   cellType_t celltype;
+   open_addr_t nodeaddress;
 } comi_cell_t;
 
 typedef struct {
@@ -92,4 +86,5 @@ void comi_init(void);
 \}
 */
 void comi_resource_register(comi_vars_t* comi_vars);
+uint8_t comi_get_allTXandRX_Cells(void);
 #endif

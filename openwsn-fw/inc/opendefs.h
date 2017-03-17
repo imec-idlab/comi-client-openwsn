@@ -20,6 +20,12 @@
 //=========================== define ==========================================
 
 static const uint8_t infoStackName[] = "OpenWSN ";
+//A-K
+static const uint8_t endpoint[] = "ep=L2";
+#define LWM2M_DEVICE_TYPE     2	// 0: Temp Sensor, 1: Hum Sensor, 2: Light Control
+static const uint8_t device_domain[] = "d=lt";
+#define LESHANPERIOD  100000
+
 #define OPENWSN_VERSION_MAJOR     1
 #define OPENWSN_VERSION_MINOR     9
 #define OPENWSN_VERSION_PATCH     0
@@ -37,6 +43,11 @@ static const uint8_t infoStackName[] = "OpenWSN ";
 #define LENGTH_ADDR128b 16
 
 #define MAXNUMNEIGHBORS 10
+
+
+
+
+
 
 enum {
    E_SUCCESS                           = 0,
@@ -168,11 +179,11 @@ enum {
    COMPONENT_SECURITY                  = 0x26,
    COMPONENT_USERIALBRIDGE             = 0x27,
    COMPONENT_COMI                 	   = 0x28,
-   COMPONENT_LWM2M			             = 0x29,
-   COMPONENT_LWM2M_DEVICE               = 0x30,
+   COMPONENT_LWM2M			           = 0x29,
+   COMPONENT_LWM2M_DEVICE              = 0x30,
    COMPONENT_LWM2M_TEMP                = 0x31,
-   COMPONENT_LWM2M_HUM                = 0x32,
-   COMPONENT_LWM2M_LED                = 0x33,
+   COMPONENT_LWM2M_HUM                 = 0x32,
+   COMPONENT_LWM2M_LED                 = 0x33,
 };
 
 /**

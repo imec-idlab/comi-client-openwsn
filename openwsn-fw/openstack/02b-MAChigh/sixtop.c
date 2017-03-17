@@ -1571,3 +1571,5 @@ bool sixtop_areAvailableCellsToBeRemoved(
    
    return available;
 }
+
+

@@ -14,7 +14,8 @@
 #include "cexample.h"
 #include "cstorm.h"
 #include "cwellknown.h"
-#include "comi/comi.h"
+#include "comi.h"
+#include "lwm2m.h"
 #include "rrt.h"
 // TCP
 #include "techo.h"

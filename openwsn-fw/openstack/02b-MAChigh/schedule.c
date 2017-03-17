@@ -854,6 +854,8 @@ void schedule_housekeeping(){
     ENABLE_INTERRUPTS();
 }
 
+
+// A-K
 void schedule_remove_allTXandRX_Cells(){
     uint8_t     i;
     INTERRUPT_DECLARATION();
@@ -862,7 +864,6 @@ void schedule_remove_allTXandRX_Cells(){
     for(i=0;i<MAXACTIVESLOTS;i++) {
         if(schedule_vars.scheduleBuf[i].type == CELLTYPE_TX || schedule_vars.scheduleBuf[i].type == CELLTYPE_RX){
         			schedule_removeActiveSlot(schedule_vars.scheduleBuf[i].slotOffset,&(schedule_vars.scheduleBuf[i].neighbor));
-        			openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)11,(errorparameter_t)0);
         }
         else{
             		openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)12,(errorparameter_t)0);
@@ -871,8 +872,6 @@ void schedule_remove_allTXandRX_Cells(){
 
     ENABLE_INTERRUPTS();
 }
-
-
 
 //=========================== private =========================================
 

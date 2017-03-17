@@ -19,6 +19,7 @@ defaultApps   = [
     'uinject',
     'userialbridge',
     'rrt',
+    'coap_rd',
 ]
 if localEnv['board']=='python':
     defaultApps  += [
