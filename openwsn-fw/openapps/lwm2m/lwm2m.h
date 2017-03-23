@@ -138,8 +138,6 @@ void lwm2m_hum_register(IPSO_Hum_Object* ipso_hum_object);
 void lwm2m_led_register(IPSO_Light_Object* ipso_led_object);
 void lwm2m_register_server_cb(opentimer_id_t id);
 void lwm2m_register_server(void);
-void lwm2m_simple_register_rd(void);
-void lwm2m_long_register_rd(void);
 
 owerror_t lwm2m_device_receive(
    OpenQueueEntry_t* msg,

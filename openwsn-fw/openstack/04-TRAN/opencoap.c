@@ -135,10 +135,10 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       
       // iterate until matching resource found, or no match
       while (found==FALSE) {
-    	  if (
-    	                 coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
+    	  if (           coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
     	                 coap_options[1].type==COAP_OPTION_NUM_URIPATH    &&
-    	                 temp_desc->path0len>0                            &&
+    	                 coap_options[2].type==COAP_OPTION_NUM_URIPATH){
+    		  if(		 temp_desc->path0len>0                            &&
     	                 temp_desc->path0val!=NULL                        &&
     	                 temp_desc->path1len>0                            &&
     	                 temp_desc->path1val!=NULL                        &&
@@ -157,39 +157,43 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
     	                 ) {
     	                 found = TRUE;
     	              };
-
+    		  }
     	  } else if (
                coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
-               coap_options[1].type==COAP_OPTION_NUM_URIPATH    &&
-               temp_desc->path0len>0                            &&
-               temp_desc->path0val!=NULL                        &&
-               temp_desc->path1len>0                            &&
-               temp_desc->path1val!=NULL
-            ) {
-            // resource has a path of form path0/path1
-               
-            if (
-                  coap_options[0].length==temp_desc->path0len                               &&
-                  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
-                  coap_options[1].length==temp_desc->path1len                               &&
-                  memcmp(coap_options[1].pValue,temp_desc->path1val,temp_desc->path1len)==0
-               ) {
-               found = TRUE;
-            };
-         
-         } else if (
-               coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
-               temp_desc->path0len>0                            &&
-               temp_desc->path0val!=NULL
-            ) {
+               coap_options[1].type==COAP_OPTION_NUM_URIPATH){
+    		  if(  temp_desc->path0len>0                            &&
+				   temp_desc->path0val!=NULL                        &&
+				   temp_desc->path1len>0                            &&
+				   temp_desc->path1val!=NULL						&&
+				   temp_desc->path2len<=0
+    		  ) {
+				// resource has a path of form path0/path1
+
+				if (
+					  coap_options[0].length==temp_desc->path0len                               &&
+					  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
+					  coap_options[1].length==temp_desc->path1len                               &&
+					  memcmp(coap_options[1].pValue,temp_desc->path1val,temp_desc->path1len)==0
+				   ) {
+				   found = TRUE;
+				};
+            }
+         } else if ( coap_options[0].type==COAP_OPTION_NUM_URIPATH){
+
+        	 if( 	temp_desc->path0len>0                            &&
+        			 temp_desc->path0val!=NULL						&&
+					 temp_desc->path1len<=0							&&
+					 temp_desc->path2len<=0
+        	 ) {
             // resource has a path of form path0
                
-            if (
-                  coap_options[0].length==temp_desc->path0len                               &&
-                  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0
-               ) {
-               found = TRUE;
-            };
+				if (
+					  coap_options[0].length==temp_desc->path0len                               &&
+					  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0
+				   ) {
+				   found = TRUE;
+				};
+            }
          };
          
          // iterate to next resource, if not found
@@ -252,7 +256,6 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
    //=== step 3. ask the resource to prepare response
    
    if (found==TRUE) {
-      
       // call the resource's callback
       outcome = temp_desc->callbackRx(msg,&coap_header,&coap_options[0]);
    } else {
@@ -260,7 +263,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       msg->payload                     = &(msg->packet[127]);
       msg->length                      = 0;
       // set the CoAP header
-      coap_header.TKL                  = 0;
+    //  coap_header.TKL                  = 0;	//A-K Changed.I think there was a bug
       coap_header.Code                 = COAP_CODE_RESP_NOTFOUND;
    }
    

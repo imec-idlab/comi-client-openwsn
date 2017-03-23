@@ -44,9 +44,9 @@ static const 	uri_t URI_oma_res_model_number[] = "3";
 static const 	uri_t URI_oma_rd[] = "rd";
 
 
-static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
+//static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
                                         0x02, 0x0d, 0xb9, 0xff, 0xfe, 0x40, 0x31, 0x14};
-//static const uint8_t ipAddr_lwm2mserver[] = {0xbb, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+static const uint8_t ipAddr_lwm2mserver[] = {0xbb, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
                                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 
 
@@ -69,16 +69,24 @@ void lwm2m_init() {
 
    lwm2m_device_register(&(lwm2m_server.device_object));
 #if LWM2M_DEVICE_TYPE==0
+   lwm2m_led_register(&(lwm2m_server.led_objects));
+   lwm2m_hum_register(&(lwm2m_server.hum_objects));
    lwm2m_temp_register(&(lwm2m_server.temp_objects));
+   opensensors_init();
 #endif
 #if LWM2M_DEVICE_TYPE==1
    lwm2m_hum_register(&(lwm2m_server.hum_objects));
+   opensensors_init();
 #endif
 #if LWM2M_DEVICE_TYPE==2
    lwm2m_led_register(&(lwm2m_server.led_objects));
 #endif
+#if LWM2M_DEVICE_TYPE==3
+   lwm2m_temp_register(&(lwm2m_server.temp_objects));
    opensensors_init();
-   coap_rd_init(COMPONENT_LWM2M, &ipAddr_lwm2mserver, LESHANPERIOD);
+#endif
+
+  // coap_rd_init(COMPONENT_LWM2M, &ipAddr_lwm2mserver, LESHANPERIOD);
 
    lwm2m_server.desc.path0len   = sizeof(URI_oma_rd)-1;
    lwm2m_server.desc.path0val   = (uint8_t*)(&URI_oma_rd);
@@ -273,8 +281,6 @@ void lwm2m_hum_register(
 	opencoap_register(&ipso_object->min_range_value.desc);
 }
 
-
-
 /**
    \brief
 */
@@ -325,7 +331,8 @@ owerror_t lwm2m_device_receive(
    ) {
    
    owerror_t            outcome;
-   
+
+
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -382,12 +389,7 @@ owerror_t lwm2m_device_receive(
 								openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)0,(errorparameter_t)2);
 
 					}
-					else{
-						uint8_t text_message[] 	= "Device Resource Not Supported";
-						packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
-						msg->payload[0] = COAP_PAYLOAD_MARKER;
-						memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
-					}
+
             	}
             	else{
             		uint8_t text_message[] 	= "Instance does not exist!";
@@ -396,15 +398,15 @@ owerror_t lwm2m_device_receive(
             								memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
             	}
             }
+            	// content-type option
+                packetfunctions_reserveHeaderSize(msg,2);
+                msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
+                		1;
+                msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
+                // set the CoAP header
+                coap_header->Code                = COAP_CODE_RESP_CONTENT;
+                outcome                          = E_SUCCESS;
 
-            // content-type option
-                                    packetfunctions_reserveHeaderSize(msg,2);
-                                    msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
-                                       1;
-                                    msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-            // set the CoAP header
-            coap_header->Code                = COAP_CODE_RESP_CONTENT;
-            outcome                          = E_SUCCESS;
             break;
          
       default:
@@ -432,7 +434,6 @@ owerror_t lwm2m_temp_receive(
    ) {
 
    owerror_t            outcome;
-   uint8_t res_notfound=0;
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -536,9 +537,7 @@ owerror_t lwm2m_temp_receive(
 													memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
 
 					}
-					else{
-						res_notfound=1;
-					}
+
             	}else{
 
             		uint8_t text_message[] 	= "Instance does not exist!";
@@ -548,7 +547,7 @@ owerror_t lwm2m_temp_receive(
             	}
             }
 
-            if(res_notfound==0){
+
             	// content-type option
                         packetfunctions_reserveHeaderSize(msg,2);
                         msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
@@ -557,10 +556,7 @@ owerror_t lwm2m_temp_receive(
                         // set the CoAP header
                         coap_header->Code                = COAP_CODE_RESP_CONTENT;
                         outcome                          = E_SUCCESS;
-            }else{
-                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
-                outcome                          = E_FAIL;
-            }
+
             break;
 
       default:
@@ -590,7 +586,6 @@ owerror_t lwm2m_hum_receive(
    ) {
 
    owerror_t            outcome;
-   uint8_t res_notfound=0;
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -691,9 +686,7 @@ owerror_t lwm2m_hum_receive(
 													memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
 
 					}
-					else{
-						res_notfound=1;
-					}
+
             	}else{
 
             		uint8_t text_message[] 	= "Instance does not exist!";
@@ -703,19 +696,15 @@ owerror_t lwm2m_hum_receive(
             	}
             }
 
-            if(res_notfound==0){
-            	// content-type option
-                        packetfunctions_reserveHeaderSize(msg,2);
-                        msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
-                           1;
-                        msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-                        // set the CoAP header
-                        coap_header->Code                = COAP_CODE_RESP_CONTENT;
-                        outcome                          = E_SUCCESS;
-            }else{
-                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
-                outcome                          = E_FAIL;
-            }
+
+            // content-type option
+            packetfunctions_reserveHeaderSize(msg,2);
+            msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 | 1;
+            msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
+            // set the CoAP header
+            coap_header->Code                = COAP_CODE_RESP_CONTENT;
+            outcome                          = E_SUCCESS;
+
             break;
 
       default:
@@ -725,8 +714,6 @@ owerror_t lwm2m_hum_receive(
 
    return outcome;
 }
-
-
 
 
 /**
@@ -746,7 +733,7 @@ owerror_t lwm2m_led_receive(
    ) {
 
    owerror_t            outcome;
-   uint8_t res_notfound=0;
+
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -791,9 +778,6 @@ owerror_t lwm2m_led_receive(
 							memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
 						}
 					}
-					else{
-						res_notfound=1;
-					}
             	}else{
 
             		uint8_t text_message[] 	= "Instance does not exist!";
@@ -803,20 +787,15 @@ owerror_t lwm2m_led_receive(
             	}
             }
 
+            // content-type option
+            packetfunctions_reserveHeaderSize(msg,2);
+            msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 | 1;
+            msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
 
-            if(res_notfound==0){
-            	// content-type option
-                        packetfunctions_reserveHeaderSize(msg,2);
-                        msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
-                           1;
-                        msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-                        // set the CoAP header
-                        coap_header->Code                = COAP_CODE_RESP_CONTENT;
-                        outcome                          = E_SUCCESS;
-            }else{
-                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
-                outcome                          = E_FAIL;
-            }
+            // set the CoAP header
+            coap_header->Code                = COAP_CODE_RESP_CONTENT;
+            outcome                          = E_SUCCESS;
+
             break;
    	   case COAP_CODE_REQ_PUT:
 
@@ -892,7 +871,6 @@ void lwm2m_register_server() {
       pkt->owner      = COMPONENT_LWM2M;
       pkt->l4_protocol  = IANA_UDP;
 
-
       //  // have CoAP module write links to lwm2m resources
       //opencoap_writeObjects(pkt,COMPONENT_LWM2M_TEMP);
      // packetfunctions_reserveHeaderSize(pkt,1);
@@ -905,7 +883,7 @@ void lwm2m_register_server() {
      uint8_t id_size;
 
 	if(LWM2M_DEVICE_TYPE==0){
-		char idtext[] = "</3303/0>,</3/0>";
+		char idtext[] = "</3303/0>,</3304/0>,</3311/0>,</3/0>";
 		memcpy(&ids[0],&idtext,sizeof(idtext)-1);
 		id_size=sizeof(idtext);
 	}
@@ -915,6 +893,11 @@ void lwm2m_register_server() {
 		id_size=sizeof(idtext);}
 	else if(LWM2M_DEVICE_TYPE==2){
 		char idtext[] = "</3311/0>,</3/0>";
+		memcpy(&ids[0],&idtext,sizeof(idtext)-1);
+		id_size=sizeof(idtext);
+	}
+   else if(LWM2M_DEVICE_TYPE==3){
+		char idtext[] = "</3303/0>,</3/0>";
 		memcpy(&ids[0],&idtext,sizeof(idtext)-1);
 		id_size=sizeof(idtext);
 	}
@@ -952,178 +935,6 @@ void lwm2m_register_server() {
          (sizeof(URI_oma_rd)-1);
       numOptions++;
 
-
-      pkt->l4_destination_port   = WKP_UDP_COAP+2;
-      pkt->l4_sourcePortORicmpv6Type   = WKP_UDP_COAP;
-      pkt->l3_destinationAdd.type = ADDR_128B;
-      // set destination address here
-      memcpy(&pkt->l3_destinationAdd.addr_128b[0], &ipAddr_lwm2mserver, 16);
-      //send
-      outcome = opencoap_send(
-              pkt,
-              COAP_TYPE_CON,
-			  COAP_CODE_REQ_POST,
-			  numOptions,
-              &(lwm2m_server.desc)
-              );
-
-      if (outcome == E_FAIL) {
-        openqueue_freePacketBuffer(pkt);
-      }
-}
-
-void lwm2m_simple_register_rd() {
-
-	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)76,(errorparameter_t)1);
-
-      OpenQueueEntry_t* pkt;
-      owerror_t outcome;
-
-      uint8_t numOptions;
-
-      pkt = openqueue_getFreePacketBuffer(COMPONENT_LWM2M);
-      if (pkt == NULL) {
-          openserial_printError(COMPONENT_LWM2M,ERR_BUSY_SENDING,
-                                (errorparameter_t)0,
-                                (errorparameter_t)0);
-          openqueue_freePacketBuffer(pkt);
-          return;
-      }
-
-      pkt->creator   = COMPONENT_LWM2M;
-      pkt->owner      = COMPONENT_LWM2M;
-      pkt->l4_protocol  = IANA_UDP;
-
-      numOptions=0;
-
-      uri_t URI_rd_wellknown[] = ".well-known";
-      uri_t URI_rd_wellknown_core[] = "core";
-
-      // query option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(endpoint)-1);
-      memcpy(&pkt->payload[0],&endpoint,sizeof(endpoint)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIPATH) << 4 |
-         ((sizeof(endpoint))-1);
-
-      // location-path option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(URI_rd_wellknown_core)-1);
-      memcpy(&pkt->payload[0],&URI_rd_wellknown_core,sizeof(URI_rd_wellknown_core)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIPATH-COAP_OPTION_NUM_URIPATH) << 4 |
-         (sizeof(URI_rd_wellknown_core)-1);
-      numOptions++;
-
-      // location-path option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(URI_rd_wellknown)-1);
-      memcpy(&pkt->payload[0],&URI_rd_wellknown,sizeof(URI_rd_wellknown)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIPATH) << 4 |
-         (sizeof(URI_rd_wellknown)-1);
-      numOptions++;
-
-      pkt->l4_destination_port   = WKP_UDP_COAP;
-      pkt->l4_sourcePortORicmpv6Type   = WKP_UDP_COAP;
-      pkt->l3_destinationAdd.type = ADDR_128B;
-      // set destination address here
-      memcpy(&pkt->l3_destinationAdd.addr_128b[0], &ipAddr_lwm2mserver, 16);
-      //send
-      outcome = opencoap_send(
-              pkt,
-              COAP_TYPE_CON,
-			  COAP_CODE_REQ_POST,
-			  numOptions,
-              &(lwm2m_server.desc)
-              );
-
-      if (outcome == E_FAIL) {
-        openqueue_freePacketBuffer(pkt);
-      }
-}
-
-
-void lwm2m_long_register_rd() {
-
-	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)77,(errorparameter_t)1);
-
-      OpenQueueEntry_t* pkt;
-      owerror_t outcome;
-
-      uint8_t numOptions;
-
-      pkt = openqueue_getFreePacketBuffer(COMPONENT_LWM2M);
-      if (pkt == NULL) {
-          openserial_printError(COMPONENT_LWM2M,ERR_BUSY_SENDING,
-                                (errorparameter_t)0,
-                                (errorparameter_t)0);
-          openqueue_freePacketBuffer(pkt);
-          return;
-      }
-
-      pkt->creator   = COMPONENT_LWM2M;
-      pkt->owner      = COMPONENT_LWM2M;
-      pkt->l4_protocol  = IANA_UDP;
-
-      numOptions=0;
-      uint8_t domain[10];
-
-	if(LWM2M_DEVICE_TYPE==0){
-		uint8_t dtext[] = "d=tmp";
-		memcpy(&domain[0],&dtext,sizeof(dtext)-1);}
-	else if(LWM2M_DEVICE_TYPE==1){
-		uint8_t dtext[] = "d=hum";
-		memcpy(&domain[0],&dtext,sizeof(dtext)-1);}
-	else if(LWM2M_DEVICE_TYPE==2){
-		uint8_t dtext[] = "d=light";
-		memcpy(&domain[0],&dtext,sizeof(dtext)-1);}
-    else{
-    	uint8_t dtext[] = "d=lln";
-		memcpy(&domain[0],&dtext,sizeof(dtext)-1);
-	}
-
-
-	//      uint8_t lwm2mversion[] = "lwm2m=1.0";
-	      // query option
-	//      packetfunctions_reserveHeaderSize(pkt,sizeof(lwm2mversion)-1);
-	 //     memcpy(&pkt->payload[0],&lwm2mversion,sizeof(lwm2mversion)-1);
-	 //     packetfunctions_reserveHeaderSize(pkt,1);
-	 //     pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-	 //              ((sizeof(lwm2mversion))-1);
-
-	      uint8_t limetime[] = "lt=86400";
-	      // query option
-	      packetfunctions_reserveHeaderSize(pkt,sizeof(limetime)-1);
-	      memcpy(&pkt->payload[0],&limetime,sizeof(limetime)-1);
-	      packetfunctions_reserveHeaderSize(pkt,1);
-	     pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-	               ((sizeof(limetime))-1);
-
-      // query option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(domain)-1);
-      memcpy(&pkt->payload[0],&domain,sizeof(domain)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-               ((sizeof(domain))-1);
-
-      // query option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(endpoint)-1);
-      memcpy(&pkt->payload[0],&endpoint,sizeof(endpoint)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
-         ((sizeof(endpoint))-1);
-
-      // content-type option
-          packetfunctions_reserveHeaderSize(pkt,2);
-          pkt->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT-COAP_OPTION_NUM_URIPATH) << 4 |1;
-          pkt->payload[1]                  = COAP_MEDTYPE_APPLINKFORMAT;
-
-      // location-path option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(URI_oma_rd)-1);
-      memcpy(&pkt->payload[0],&URI_oma_rd,sizeof(URI_oma_rd)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIPATH) << 4 |
-         (sizeof(URI_oma_rd)-1);
-      numOptions++;
 
       pkt->l4_destination_port   = WKP_UDP_COAP;
       pkt->l4_sourcePortORicmpv6Type   = WKP_UDP_COAP;
