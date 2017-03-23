@@ -42,7 +42,7 @@ void openapps_init(void) {
    cwellknown_init();
   // rrt_init();
    // TCP
-   techo_init();
+  // techo_init();
    comi_init();
    lwm2m_init();
    // UDP

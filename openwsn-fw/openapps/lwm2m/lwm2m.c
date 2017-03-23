@@ -432,7 +432,7 @@ owerror_t lwm2m_temp_receive(
    ) {
 
    owerror_t            outcome;
-
+   uint8_t res_notfound=0;
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -537,10 +537,7 @@ owerror_t lwm2m_temp_receive(
 
 					}
 					else{
-						uint8_t text_message[] 	= "Resource not supported";
-						packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
-						msg->payload[0] = COAP_PAYLOAD_MARKER;
-						memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+						res_notfound=1;
 					}
             	}else{
 
@@ -551,14 +548,19 @@ owerror_t lwm2m_temp_receive(
             	}
             }
 
-            // content-type option
+            if(res_notfound==0){
+            	// content-type option
                         packetfunctions_reserveHeaderSize(msg,2);
                         msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
                            1;
                         msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-            // set the CoAP header
-            coap_header->Code                = COAP_CODE_RESP_CONTENT;
-            outcome                          = E_SUCCESS;
+                        // set the CoAP header
+                        coap_header->Code                = COAP_CODE_RESP_CONTENT;
+                        outcome                          = E_SUCCESS;
+            }else{
+                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
+                outcome                          = E_FAIL;
+            }
             break;
 
       default:
@@ -588,7 +590,7 @@ owerror_t lwm2m_hum_receive(
    ) {
 
    owerror_t            outcome;
-
+   uint8_t res_notfound=0;
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -690,10 +692,7 @@ owerror_t lwm2m_hum_receive(
 
 					}
 					else{
-						uint8_t text_message[] 	= "Resource not supported";
-						packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
-						msg->payload[0] = COAP_PAYLOAD_MARKER;
-						memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+						res_notfound=1;
 					}
             	}else{
 
@@ -704,14 +703,19 @@ owerror_t lwm2m_hum_receive(
             	}
             }
 
-            // content-type option
+            if(res_notfound==0){
+            	// content-type option
                         packetfunctions_reserveHeaderSize(msg,2);
                         msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
                            1;
                         msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-            // set the CoAP header
-            coap_header->Code                = COAP_CODE_RESP_CONTENT;
-            outcome                          = E_SUCCESS;
+                        // set the CoAP header
+                        coap_header->Code                = COAP_CODE_RESP_CONTENT;
+                        outcome                          = E_SUCCESS;
+            }else{
+                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
+                outcome                          = E_FAIL;
+            }
             break;
 
       default:
@@ -742,6 +746,7 @@ owerror_t lwm2m_led_receive(
    ) {
 
    owerror_t            outcome;
+   uint8_t res_notfound=0;
    switch (coap_header->Code) {
 
    	   case COAP_CODE_REQ_GET:
@@ -787,10 +792,7 @@ owerror_t lwm2m_led_receive(
 						}
 					}
 					else{
-						uint8_t text_message[] 	= "Resource not supported";
-						packetfunctions_reserveHeaderSize(msg,sizeof(text_message));
-						msg->payload[0] = COAP_PAYLOAD_MARKER;
-						memcpy(&msg->payload[1],&text_message,sizeof(text_message)-1);
+						res_notfound=1;
 					}
             	}else{
 
@@ -801,14 +803,20 @@ owerror_t lwm2m_led_receive(
             	}
             }
 
-            // content-type option
+
+            if(res_notfound==0){
+            	// content-type option
                         packetfunctions_reserveHeaderSize(msg,2);
                         msg->payload[0]                  = (COAP_OPTION_NUM_CONTENTFORMAT) << 4 |
                            1;
                         msg->payload[1]                  = COAP_MEDTYPE_TEXTPLAIN;
-            // set the CoAP header
-            coap_header->Code                = COAP_CODE_RESP_CONTENT;
-            outcome                          = E_SUCCESS;
+                        // set the CoAP header
+                        coap_header->Code                = COAP_CODE_RESP_CONTENT;
+                        outcome                          = E_SUCCESS;
+            }else{
+                coap_header->Code                = COAP_CODE_RESP_METHODNOTALLOWED;
+                outcome                          = E_FAIL;
+            }
             break;
    	   case COAP_CODE_REQ_PUT:
 
@@ -865,7 +873,7 @@ void lwm2m_register_server_cb(opentimer_id_t id){
 }
 
 void lwm2m_register_server() {
-	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)76,(errorparameter_t)0);
+
       OpenQueueEntry_t* pkt;
       owerror_t outcome;
 
