@@ -44,13 +44,14 @@ typedef struct {
 //=========================== Data Model =======================================
 
 static const 	sid_t SID_comi_celllist = 4001;
-static const	sid_t SID_comi_slotframeid = 4002;
-static const 	sid_t SID_comi_slotoffset = 4003;
-static const 	sid_t SID_comi_channeloffset = 4004;
-static const 	sid_t SID_comi_linkoption = 4005;
-static const 	sid_t SID_comi_linktype = 4006;
-static const 	sid_t SID_comi_celltype = 4007;
-static const 	sid_t SID_comi_nodeaddress = 4008;
+static const	sid_t SID_comi_cellid = 4002;
+static const	sid_t SID_comi_slotframeid = 4003;
+static const 	sid_t SID_comi_slotoffset = 4004;
+static const 	sid_t SID_comi_channeloffset = 4005;
+static const 	sid_t SID_comi_linkoption = 4006;
+static const 	sid_t SID_comi_linktype = 4007;
+static const 	sid_t SID_comi_celltype = 4008;
+static const 	sid_t SID_comi_nodeaddress = 4009;
 //=========================== prototypes ======================================
 
 void comi_init(void);

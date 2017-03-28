@@ -92,7 +92,7 @@ void lwm2m_init() {
    lwm2m_server.desc.path2val   = NULL;
    lwm2m_server.desc.componentID      = COMPONENT_LWM2M;
    lwm2m_server.desc.discoverable     = FALSE;
-   lwm2m_server.desc.callbackRx       = &lwm2m_temp_receive;
+   lwm2m_server.desc.callbackRx       = &lwm2m_leshan_receive;
    lwm2m_server.desc.callbackSendDone = &lwm2m_sendDone;
 	opencoap_register(&lwm2m_server.desc);
 
@@ -266,6 +266,29 @@ void lwm2m_led_register(
 	ipso_object->on_off_res.desc.callbackRx       = &lwm2m_led_receive;
 	ipso_object->on_off_res.desc.callbackSendDone = &lwm2m_sendDone;
 	opencoap_register(&ipso_object->on_off_res.desc);
+}
+
+
+owerror_t lwm2m_leshan_receive(
+      OpenQueueEntry_t* msg,
+      coap_header_iht*  coap_header,
+      coap_option_iht*  coap_options
+   ) {
+
+   owerror_t            outcome;
+   switch (coap_header->Code) {
+
+   	   case COAP_CODE_RESP_CREATED:
+   		   opentimers_stop(lwm2m_server.leshan.timerId);
+
+           break;
+
+      default:
+         outcome = E_FAIL;
+         break;
+   }
+
+   return outcome;
 }
 
 

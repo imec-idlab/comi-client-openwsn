@@ -162,12 +162,8 @@ owerror_t comi_receive(
 							  itoa(type,type_txt,10);
 
 
-								 packetfunctions_reserveHeaderSize(msg,1);
-								 msg->payload[0] = '\n';
-							  //packetfunctions_reserveHeaderSize(msg,sizeof(linkoptions_txt)-1);
-							//  memcpy(&msg->payload[0],&linkoptions_txt[0],sizeof(linkoptions_txt)-1);
-							  //   packetfunctions_reserveHeaderSize(msg,1);
-							  //   msg->payload[0] = ' ';
+							 packetfunctions_reserveHeaderSize(msg,1);
+							 msg->payload[0] = '\n';
 
 							  packetfunctions_reserveHeaderSize(msg,choffset_txt_size);
 							  memcpy(&msg->payload[0],&choffset_txt[0],choffset_txt_size);

@@ -213,15 +213,13 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       
       // start with the first resource in the linked list
       temp_desc = opencoap_vars.resources;
-      
       // iterate until matching resource found, or no match
       while (found==FALSE) {
-         
-         if (
+
+    	  if (
                 coap_header.TKL==temp_desc->last_request.TKL                                       &&
                 memcmp(&coap_header.token[0],&temp_desc->last_request.token[0],coap_header.TKL)==0
             ) {
-                
             if (coap_header.T==COAP_TYPE_ACK || coap_header.T==COAP_TYPE_RES) {
                 if (coap_header.messageID==temp_desc->last_request.messageID) {
                     found=TRUE;
@@ -229,7 +227,6 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
             } else {
                 found=TRUE;
             }
-            
             // call the resource's callback
             if (found==TRUE && temp_desc->callbackRx!=NULL) {
                temp_desc->callbackRx(msg,&coap_header,&coap_options[0]);
@@ -245,7 +242,6 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
             }
          }
       };
-      
       // free the received packet
       openqueue_freePacketBuffer(msg);
       
@@ -562,6 +558,7 @@ owerror_t opencoap_send(
        memcpy(&request->token[tokenPos],&token,2);
        tokenPos+=2;
    }
+
    // pre-pend CoAP header (version,type,TKL,code,messageID,Token)
    packetfunctions_reserveHeaderSize(msg,4+request->TKL);
    msg->payload[0]                  = (COAP_VERSION   << 6) |
@@ -571,7 +568,7 @@ owerror_t opencoap_send(
    msg->payload[2]                  = (request->messageID>>8) & 0xff;
    msg->payload[3]                  = (request->messageID>>0) & 0xff;
 
-   memcpy(&msg->payload[4],&token,request->TKL);
+   memcpy(&msg->payload[4],&request->token[0],request->TKL); // A-K bugfix: it was only writing the first 2 bytes of token memcpy(&msg->payload[4],&token,request->TKL);
 
    return openudp_send(msg);
 }

@@ -120,6 +120,12 @@ void lwm2m_led_register(IPSO_Light_Object* ipso_led_object);
 void lwm2m_register_server_cb(opentimer_id_t id);
 void lwm2m_register_server(void);
 
+owerror_t lwm2m_leshan_receive(
+      OpenQueueEntry_t* msg,
+      coap_header_iht*  coap_header,
+      coap_option_iht*  coap_options
+   );
+
 owerror_t lwm2m_temp_receive(
    OpenQueueEntry_t* msg,
    coap_header_iht*  coap_header,
