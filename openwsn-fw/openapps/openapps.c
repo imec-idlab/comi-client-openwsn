@@ -16,6 +16,7 @@
 #include "cwellknown.h"
 #include "comi.h"
 #include "lwm2m.h"
+#include "lwm2m_dev.h"
 #include "rrt.h"
 // TCP
 #include "techo.h"
@@ -45,6 +46,7 @@ void openapps_init(void) {
   // techo_init();
    comi_init();
    lwm2m_init();
+   lwm2m_dev_init();
    // UDP
 //   uecho_init();
 }

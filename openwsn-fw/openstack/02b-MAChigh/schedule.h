@@ -204,7 +204,8 @@ void               schedule_indicateTx(
                    );
 
 void               schedule_housekeeping();
-void		       schedule_remove_allTXandRX_Cells();
+void		       schedule_remove_allTXandRX_Cells(void);
+schedule_vars_t* 	schedule_getSchedule_Vars(void);
 /**
 \}
 \}

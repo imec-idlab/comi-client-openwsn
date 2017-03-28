@@ -22,41 +22,15 @@
 
 //=========================== define ==========================================
 
-
-#define NUMCELLS 11
 //=========================== typedef =========================================
-typedef uint8_t clotframeid_t;
-typedef uint8_t clotframeid_t;
-typedef uint32_t sid_t;
-typedef enum {
-   LINK_NORMAL                  = 0,
-   LINK_ADVERTISING             = 1,
-} linktype_t;
 
-typedef struct {
-   uint8_t numofstatistics;
+typedef uint16_t sid_t;
 
-} comi_statistics_container;
 
 typedef struct {
    coap_resource_desc_t desc;
-   clotframeid_t slotframeid;
-   uint16_t slotoffset;
-   uint16_t channeloffset;
-   linktype_t linktype;
-   cellType_t celltype;
-   open_addr_t nodeaddress;
-} comi_cell_t;
-
-typedef struct {
-   coap_resource_desc_t desc;
-   comi_cell_t comi_cell[NUMCELLS]; //   uint16_t cellID: is the key!!
+   schedule_vars_t* schedule_vars;
 } comi_celllist_res_t;
-
-typedef struct {
-   coap_resource_desc_t desc;
-   uint16_t freecell;
-} comi_freecell_res_t;
 
 
 //=========================== variables =======================================
@@ -69,14 +43,14 @@ typedef struct {
 
 //=========================== Data Model =======================================
 
-static const 	sid_t SID_comi_celllist = 60001;
-static const	sid_t SID_comi_slotframeid = 60002;
-static const 	sid_t SID_comi_slotoffset = 60003;
-static const 	sid_t SID_comi_channeloffset = 60004;
-static const 	sid_t SID_comi_linkoption = 60005;
-static const 	sid_t SID_comi_linktype = 60006;
-static const 	sid_t SID_comi_celltype = 60007;
-static const 	sid_t SID_comi_nodeaddress = 60008;
+static const 	sid_t SID_comi_celllist = 4001;
+static const	sid_t SID_comi_slotframeid = 4002;
+static const 	sid_t SID_comi_slotoffset = 4003;
+static const 	sid_t SID_comi_channeloffset = 4004;
+static const 	sid_t SID_comi_linkoption = 4005;
+static const 	sid_t SID_comi_linktype = 4006;
+static const 	sid_t SID_comi_celltype = 4007;
+static const 	sid_t SID_comi_nodeaddress = 4008;
 //=========================== prototypes ======================================
 
 void comi_init(void);
@@ -86,5 +60,5 @@ void comi_init(void);
 \}
 */
 void comi_resource_register(comi_vars_t* comi_vars);
-uint8_t comi_get_allTXandRX_Cells(void);
+
 #endif

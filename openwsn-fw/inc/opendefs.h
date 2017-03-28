@@ -22,9 +22,8 @@
 static const uint8_t infoStackName[] = "OpenWSN ";
 //A-K
 static const uint8_t endpoint[] = "ep=S1";
-#define LWM2M_DEVICE_TYPE     1	// 0: ALL, 1: Hum Sensor, 2: Light Control 3: Temp_Sensor
+#define LWM2M_DEVICE_TYPE     4	// 0: ALL, 1: Hum Sensor, 2: Light Control 3: Temp_Sensor
 static const uint8_t device_domain[] = "d=lln";
-#define LESHANPERIOD  100000
 
 #define OPENWSN_VERSION_MAJOR     1
 #define OPENWSN_VERSION_MINOR     9

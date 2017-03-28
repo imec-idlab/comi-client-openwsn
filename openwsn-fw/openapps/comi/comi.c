@@ -6,6 +6,7 @@
 */
 
 #include "comi.h"
+#include "base64.h"
 #include "opendefs.h"
 #include "sixtop.h"
 #include "idmanager.h"
@@ -17,7 +18,7 @@
 //=========================== defines =========================================
 
 const uint8_t comi_path0[] = "c";
-const uint8_t comi_cellist_path1[] = "s";
+const uint8_t comi_cellist_path1[] = "+h"; //4001
 
 //=========================== variables =======================================
 
@@ -40,8 +41,9 @@ void comi_init() {
    if(idmanager_getIsDAGroot()==TRUE) return; 
    
    memset(&comi_vars,0,sizeof(comi_vars_t));
+   comi_vars.comi_celllist.schedule_vars=schedule_getSchedule_Vars();
 
-   // prepare the resource descriptor for the /c path
+    // prepare the resource descriptor for the /c path
    comi_vars.desc.path0len            = sizeof(comi_path0)-1;
    comi_vars.desc.path0val            = (uint8_t*)(&comi_path0);
    comi_vars.desc.path1len            = 0;
@@ -127,59 +129,62 @@ owerror_t comi_receive(
 					   comi_vars.comi_celllist.desc.path1len
 				                  )==0
 				                  ) {
-            		uint8_t numOfCell=0;
             		uint8_t i;
-            		numOfCell=comi_get_allTXandRX_Cells();
+            		uint16_t maxActiveSlots=schedule_getMaxActiveSlots();
+					  for(i=0;i<maxActiveSlots;i++){
+						  if(comi_vars.comi_celllist.schedule_vars->scheduleBuf[i].next==NULL){
+							  i=maxActiveSlots;
+						  }
+						  else{
+							  uint8_t tsnum=(uint8_t)comi_vars.comi_celllist.schedule_vars->scheduleBuf[i].slotOffset & 0x00ff;
+							  uint8_t choffset=(uint8_t)comi_vars.comi_celllist.schedule_vars->scheduleBuf[i].channelOffset;
+							  uint8_t addr=(uint8_t)comi_vars.comi_celllist.schedule_vars->scheduleBuf[i].neighbor.addr_64b[7];
+							  uint8_t type=(uint8_t)comi_vars.comi_celllist.schedule_vars->scheduleBuf[i].type;
 
-					  for(i=0;i<numOfCell;i++){
-//                	   openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)cellList[i].tsNum & 0x00ff,(errorparameter_t)0);
- //               	   openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)cellList[i].choffset & 0x00ff,(errorparameter_t)0);
-  //              	   openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)cellList[i].linkoptions,(errorparameter_t)0);
-					 //  memcpy(&msg->payload[0],&(cellList[i].tsNum),sizeof(cellList[i].tsNum)-1);
-					 //  memcpy(&msg->payload[0],&(cellList[i].choffset),sizeof(cellList[i].choffset)-1);
-					 //  memcpy(&msg->payload[0],&(cellList[i].linkoptions),sizeof(cellList[i].linkoptions)-1);
-					   // add value
+							//  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)tsnum,(errorparameter_t)tsnum);
+							//  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)choffset,(errorparameter_t)tsnum);
+							//  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)addr,(errorparameter_t)tsnum);
+							//  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)type,(errorparameter_t)tsnum);
 
-						  int tsnum=(int)comi_vars.comi_celllist.comi_cell[i].slotoffset & 0x00ff;
-						  int choffset=(int)comi_vars.comi_celllist.comi_cell[i].channeloffset & 0x00ff;
-						//  int linkoptions=(int)comi_vars.comi_celllist.comi_cell[i].celltype;
-						  int addr=(int)comi_vars.comi_celllist.comi_cell[i].nodeaddress.addr_64b[7];
+							  char tsnum_txt[2];
+							  char choffset_txt[2];
+							//  char linkoptions_txt[2];
+							  char addr_txt[2];
+							  char type_txt[1];
 
-						  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)tsnum,(errorparameter_t)tsnum);
-						  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)choffset,(errorparameter_t)tsnum);
-						  openserial_printInfo(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)addr,(errorparameter_t)tsnum);
-
-						  char tsnum_txt[2];
-						  char choffset_txt[2];
-						//  char linkoptions_txt[2];
-						  char addr_txt[2];
-
-						  itoa(tsnum,tsnum_txt,10);
-						  itoa(choffset,choffset_txt,10);
-						  //itoa(linkoptions,linkoptions_txt,10);
-						  itoa(addr,addr_txt,16);
-
-
-					         packetfunctions_reserveHeaderSize(msg,1);
-					         msg->payload[0] = '\n';
-						  //packetfunctions_reserveHeaderSize(msg,sizeof(linkoptions_txt)-1);
-						//  memcpy(&msg->payload[0],&linkoptions_txt[0],sizeof(linkoptions_txt)-1);
-					      //   packetfunctions_reserveHeaderSize(msg,1);
-					      //   msg->payload[0] = ' ';
-						  packetfunctions_reserveHeaderSize(msg,sizeof(choffset_txt));
-						  memcpy(&msg->payload[0],&choffset_txt[0],sizeof(choffset_txt));
-					      packetfunctions_reserveHeaderSize(msg,1);
-					      msg->payload[0] = ' ';
-						  packetfunctions_reserveHeaderSize(msg,sizeof(tsnum_txt));
-						  memcpy(&msg->payload[0],&tsnum_txt[0],sizeof(tsnum_txt));
-					      packetfunctions_reserveHeaderSize(msg,1);
-					      msg->payload[0] = ' ';
-						  packetfunctions_reserveHeaderSize(msg,sizeof(addr_txt));
-						  memcpy(&msg->payload[0],&addr_txt[0],sizeof(addr_txt));
+							  itoa(tsnum,tsnum_txt,10);
+							  uint8_t tsnum_txt_size=1+(1<=tsnum/10)+(1<=tsnum/100);
+							  itoa(choffset,choffset_txt,10);
+							  uint8_t choffset_txt_size=1+(1<=choffset/10);
+							  //itoa(linkoptions,linkoptions_txt,10);
+							  itoa(addr,addr_txt,16);
+							  uint8_t addr_txt_size=1+(1<=(addr>>4));
+							  itoa(type,type_txt,10);
 
 
+								 packetfunctions_reserveHeaderSize(msg,1);
+								 msg->payload[0] = '\n';
+							  //packetfunctions_reserveHeaderSize(msg,sizeof(linkoptions_txt)-1);
+							//  memcpy(&msg->payload[0],&linkoptions_txt[0],sizeof(linkoptions_txt)-1);
+							  //   packetfunctions_reserveHeaderSize(msg,1);
+							  //   msg->payload[0] = ' ';
 
-            		}
+							  packetfunctions_reserveHeaderSize(msg,choffset_txt_size);
+							  memcpy(&msg->payload[0],&choffset_txt[0],choffset_txt_size);
+							  packetfunctions_reserveHeaderSize(msg,1);
+							  msg->payload[0] = ' ';
+							  packetfunctions_reserveHeaderSize(msg,tsnum_txt_size);
+							  memcpy(&msg->payload[0],&tsnum_txt[0],tsnum_txt_size);
+							  packetfunctions_reserveHeaderSize(msg,1);
+							  msg->payload[0] = ' ';
+							  packetfunctions_reserveHeaderSize(msg,addr_txt_size);
+							  memcpy(&msg->payload[0],&addr_txt[0],addr_txt_size);
+							  packetfunctions_reserveHeaderSize(msg,1);
+							  msg->payload[0] = ' ';
+							  packetfunctions_reserveHeaderSize(msg,sizeof(type_txt));
+							  memcpy(&msg->payload[0],&type_txt[0],sizeof(type_txt));
+						  }
+					  }
 						packetfunctions_reserveHeaderSize(msg,1);
 						msg->payload[0]  = COAP_PAYLOAD_MARKER;
             	}
@@ -251,46 +256,6 @@ owerror_t comi_receive(
    }
    
    return outcome;
-}
-
-
-
-// A-K
-uint8_t comi_get_allTXandRX_Cells(){
-
-    uint8_t          i=0;
-    uint8_t          numtxrxcells=0;
-    scheduleEntry_t* scheduleWalker;
-    scheduleEntry_t* currentEntry;
-
-    INTERRUPT_DECLARATION();
-    DISABLE_INTERRUPTS();
-
-
-    scheduleWalker = schedule_getCurrentScheduleEntry();
-    currentEntry   = scheduleWalker;
-    do {
-
-    	if(scheduleWalker->type!=CELLTYPE_SERIALRX){
-			comi_vars.comi_celllist.comi_cell[numtxrxcells].slotoffset        = scheduleWalker->slotOffset;
-			comi_vars.comi_celllist.comi_cell[numtxrxcells].channeloffset     = scheduleWalker->channelOffset;
-			comi_vars.comi_celllist.comi_cell[numtxrxcells].celltype  		  = scheduleWalker->type;
-
-			if(scheduleWalker->neighbor.type==ADDR_ANYCAST){
-				comi_vars.comi_celllist.comi_cell[numtxrxcells].nodeaddress.addr_64b[7]=0;
-				numtxrxcells++;
-			}else if(scheduleWalker->neighbor.type==ADDR_64B){
-				comi_vars.comi_celllist.comi_cell[numtxrxcells].nodeaddress.addr_64b[7]=scheduleWalker->neighbor.addr_64b[7];
-				numtxrxcells++;
-			}
-    	}
-		   i++;
-		   scheduleWalker = scheduleWalker->next;
-
-    }while(scheduleWalker!=currentEntry && i!=MAXACTIVESLOTS);
-
-    ENABLE_INTERRUPTS();
-    return numtxrxcells;
 }
 
 

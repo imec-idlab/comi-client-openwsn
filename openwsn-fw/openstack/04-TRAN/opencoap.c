@@ -379,7 +379,7 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
       if (  
             (temp_resource->discoverable==TRUE) &&
             (
-               ((componentID==COMPONENT_CWELLKNOWN) && (temp_resource->path1len==0))
+               ((componentID==COMPONENT_CWELLKNOWN) )
                || 
                ((componentID==temp_resource->componentID) && (temp_resource->path1len!=0))
             )

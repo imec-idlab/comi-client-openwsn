@@ -14,6 +14,7 @@ defaultApps   = [
     'cwellknown',
     'comi',
     'lwm2m',
+    'lwm2m_dev',
     'techo',
     'uecho',
     'uinject',
@@ -30,11 +31,12 @@ if localEnv['board']=='python':
 # apps which should always be present
 defaultAppsInit   = [
    # 'c6t',
-    'cinfo',
+   # 'cinfo',
    # 'cleds',
     'cwellknown',
     'comi',
     'lwm2m',
+    'lwm2m_dev',
    # 'techo',
    # 'uecho',
    # 'rrt',
@@ -107,6 +109,9 @@ sources_h         += ['openapps.h']
 for a in apps:
     sources_c     += [os.path.join(a,a+'.c')]
     sources_h     += [os.path.join(a,a+'.h')]
+
+sources_c     += [os.path.join('comi','base64.c')]
+sources_h     += [os.path.join('comi','base64.h')]
 
 #===== build the openapps library
 

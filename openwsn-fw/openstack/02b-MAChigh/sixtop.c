@@ -193,8 +193,6 @@ void sixtop_request(uint8_t code, open_addr_t* neighbor, uint8_t numCells){
    
     memset(cellList,0,sizeof(cellList));
    
-
-    openserial_printInfo(COMPONENT_SIXTOP,ERR_AK_COMI,(errorparameter_t)0,(errorparameter_t)0);
     // filter parameters
     if(sixtop_vars.six2six_state!=SIX_STATE_IDLE){
         return;
