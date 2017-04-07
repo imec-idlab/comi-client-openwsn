@@ -91,6 +91,10 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       coap_options[i].type = COAP_OPTION_NONE;
    }
    
+   // find first URI Path
+   uint8_t posURIPath=0;
+   bool URIFound=false;
+
    // fill in the coap_options
    last_option = COAP_OPTION_NONE;
    for (i=0;i<MAX_COAP_OPTIONS;i++) {
@@ -113,6 +117,11 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       index++;
       coap_options[i].pValue      = &(msg->payload[index]);
       index                      += coap_options[i].length; //includes length as well
+
+      if(URIFound==false &&  coap_options[i].type == COAP_OPTION_NUM_URIPATH){
+    	   posURIPath=i;
+    	   URIFound=true;
+      }
    }
    
    // remove the CoAP header+options
@@ -135,9 +144,9 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       
       // iterate until matching resource found, or no match
       while (found==FALSE) {
-    	  if (           coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
-    	                 coap_options[1].type==COAP_OPTION_NUM_URIPATH    &&
-    	                 coap_options[2].type==COAP_OPTION_NUM_URIPATH){
+    	  if (           coap_options[posURIPath].type==COAP_OPTION_NUM_URIPATH    &&
+    	                 coap_options[posURIPath+1].type==COAP_OPTION_NUM_URIPATH    &&
+    	                 coap_options[posURIPath+2].type==COAP_OPTION_NUM_URIPATH){
     		  if(		 temp_desc->path0len>0                            &&
     	                 temp_desc->path0val!=NULL                        &&
     	                 temp_desc->path1len>0                            &&
@@ -148,19 +157,19 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
     	              // resource has a path of form path0/path1/path2
 
     	              if (
-    	                    coap_options[0].length==temp_desc->path0len                               &&
-    	                    memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
-    	                    coap_options[1].length==temp_desc->path1len                               &&
-    	                    memcmp(coap_options[1].pValue,temp_desc->path1val,temp_desc->path1len)==0 &&
-    	                    coap_options[2].length==temp_desc->path2len                               &&
-    	                    memcmp(coap_options[2].pValue,temp_desc->path2val,temp_desc->path2len)==0
+    	                    coap_options[posURIPath].length==temp_desc->path0len                               &&
+    	                    memcmp(coap_options[posURIPath].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
+    	                    coap_options[posURIPath+1].length==temp_desc->path1len                               &&
+    	                    memcmp(coap_options[posURIPath+1].pValue,temp_desc->path1val,temp_desc->path1len)==0 &&
+    	                    coap_options[posURIPath+2].length==temp_desc->path2len                               &&
+    	                    memcmp(coap_options[posURIPath+2].pValue,temp_desc->path2val,temp_desc->path2len)==0
     	                 ) {
     	                 found = TRUE;
     	              };
     		  }
     	  } else if (
-               coap_options[0].type==COAP_OPTION_NUM_URIPATH    &&
-               coap_options[1].type==COAP_OPTION_NUM_URIPATH){
+               coap_options[posURIPath].type==COAP_OPTION_NUM_URIPATH    &&
+               coap_options[posURIPath+1].type==COAP_OPTION_NUM_URIPATH){
     		  if(  temp_desc->path0len>0                            &&
 				   temp_desc->path0val!=NULL                        &&
 				   temp_desc->path1len>0                            &&
@@ -170,15 +179,15 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
 				// resource has a path of form path0/path1
 
 				if (
-					  coap_options[0].length==temp_desc->path0len                               &&
-					  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
-					  coap_options[1].length==temp_desc->path1len                               &&
-					  memcmp(coap_options[1].pValue,temp_desc->path1val,temp_desc->path1len)==0
+					  coap_options[posURIPath].length==temp_desc->path0len                               &&
+					  memcmp(coap_options[posURIPath].pValue,temp_desc->path0val,temp_desc->path0len)==0 &&
+					  coap_options[posURIPath+1].length==temp_desc->path1len                               &&
+					  memcmp(coap_options[posURIPath+1].pValue,temp_desc->path1val,temp_desc->path1len)==0
 				   ) {
 				   found = TRUE;
 				};
             }
-         } else if ( coap_options[0].type==COAP_OPTION_NUM_URIPATH){
+         } else if ( coap_options[posURIPath].type==COAP_OPTION_NUM_URIPATH){
 
         	 if( 	temp_desc->path0len>0                            &&
         			 temp_desc->path0val!=NULL						&&
@@ -188,8 +197,8 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
             // resource has a path of form path0
                
 				if (
-					  coap_options[0].length==temp_desc->path0len                               &&
-					  memcmp(coap_options[0].pValue,temp_desc->path0val,temp_desc->path0len)==0
+					  coap_options[posURIPath].length==temp_desc->path0len                               &&
+					  memcmp(coap_options[posURIPath].pValue,temp_desc->path0val,temp_desc->path0len)==0
 				   ) {
 				   found = TRUE;
 				};
@@ -574,3 +583,40 @@ owerror_t opencoap_send(
 }
 
 //=========================== private =========================================
+
+
+
+//=========================== A-K =========================================
+
+owerror_t opencoap_sendresponse(
+      OpenQueueEntry_t*      msg,
+      coap_type_t            type,
+      coap_code_t            code,
+      uint8_t                TKL,
+      uint8_t*                token[]
+   ) {
+   // increment the (global) messageID
+   if (opencoap_vars.messageID++ == 0xffff) {
+      opencoap_vars.messageID = 0;
+   }
+
+   // take ownership over the packet
+   msg->owner                       = COMPONENT_OPENCOAP;
+
+   // fill in packet metadata
+   msg->l4_sourcePortORicmpv6Type   = WKP_UDP_COAP;
+   // pre-pend CoAP header (version,type,TKL,code,messageID,Token)
+   packetfunctions_reserveHeaderSize(msg,4+TKL);
+   msg->payload[0]                  = (COAP_VERSION   << 6) |
+                                      (type           << 4) |
+                                      (TKL   << 0);
+   msg->payload[1]                  = code;
+
+   msg->payload[2]                  = (opencoap_vars.messageID>>8) & 0xff;
+   msg->payload[3]                  = (opencoap_vars.messageID>>0) & 0xff;
+
+   memcpy(&msg->payload[4],&token[0],TKL); // A-K bugfix: it was only writing the first 2 bytes of token memcpy(&msg->payload[4],&token,request->TKL);
+
+   return openudp_send(msg);
+}
+

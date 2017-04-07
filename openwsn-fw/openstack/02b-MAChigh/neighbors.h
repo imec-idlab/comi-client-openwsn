@@ -93,6 +93,8 @@ void          neighbors_removeOld(void);
 // debug
 bool          debugPrint_neighbors(void);
 
+
+neighbors_vars_t* schedule_getNeighbor_Vars(void);
 /**
 \}
 \}

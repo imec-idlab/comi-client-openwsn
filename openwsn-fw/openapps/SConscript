@@ -12,7 +12,7 @@ defaultApps   = [
     'cinfo',
     'cleds',
     'cwellknown',
-    'comi',
+    'c6top',
     'lwm2m',
     'lwm2m_dev',
     'techo',
@@ -34,9 +34,9 @@ defaultAppsInit   = [
    # 'cinfo',
    # 'cleds',
     'cwellknown',
-    'comi',
-    'lwm2m',
-    'lwm2m_dev',
+    'c6top',
+   # 'lwm2m',
+   # 'lwm2m_dev',
    # 'techo',
    # 'uecho',
    # 'rrt',
@@ -110,8 +110,12 @@ for a in apps:
     sources_c     += [os.path.join(a,a+'.c')]
     sources_h     += [os.path.join(a,a+'.h')]
 
-sources_c     += [os.path.join('comi','base64.c')]
-sources_h     += [os.path.join('comi','base64.h')]
+sources_c     += [os.path.join('c6top/base64','base64.c')]
+sources_h     += [os.path.join('c6top/base64','base64.h')]
+sources_c     += [os.path.join('c6top/comi','comi.c')]
+sources_h     += [os.path.join('c6top/comi','comi.h')]
+sources_c     += [os.path.join('c6top/comi/cbor','cbor.c')]
+sources_h     += [os.path.join('c6top/comi/cbor','cbor.h')]
 
 #===== build the openapps library
 

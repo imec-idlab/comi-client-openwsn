@@ -8,13 +8,13 @@
 
 // CoAP
 #include "c6t.h"
+#include "c6top.h"
 #include "cinfo.h"
 #include "csensors.h"
 #include "cleds.h"
 #include "cexample.h"
 #include "cstorm.h"
 #include "cwellknown.h"
-#include "comi.h"
 #include "lwm2m.h"
 #include "lwm2m_dev.h"
 #include "rrt.h"
@@ -44,9 +44,9 @@ void openapps_init(void) {
   // rrt_init();
    // TCP
   // techo_init();
-   comi_init();
-   lwm2m_init();
-   lwm2m_dev_init();
+   c6top_init();
+  // lwm2m_init();
+ //  lwm2m_dev_init();
    // UDP
 //   uecho_init();
 }

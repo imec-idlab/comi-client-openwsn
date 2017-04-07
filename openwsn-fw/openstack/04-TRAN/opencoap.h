@@ -83,6 +83,7 @@ typedef enum {
    COAP_OPTION_NUM_URIHOST             = 3,
    COAP_OPTION_NUM_ETAG                = 4,
    COAP_OPTION_NUM_IFNONEMATCH         = 5,
+   COAP_OPTION_NUM_OBSERVE         	   = 6,
    COAP_OPTION_NUM_URIPORT             = 7,
    COAP_OPTION_NUM_LOCATIONPATH        = 8,
    COAP_OPTION_NUM_URIPATH             = 11,
@@ -102,6 +103,7 @@ typedef enum {
    COAP_MEDTYPE_APPOCTETSTREAM         = 42,
    COAP_MEDTYPE_APPEXI                 = 47,
    COAP_MEDTYPE_APPJSON                = 50,
+   COAP_MEDTYPE_CBOR                	= 60,
 } coap_media_type_t;
 
 
@@ -121,6 +123,15 @@ typedef struct {
    uint8_t       length;
    uint8_t*      pValue;
 } coap_option_iht;
+
+typedef struct {
+   uint8_t       TKL;
+   uint8_t       token[COAP_MAX_TKL];
+   open_addr_t   observer_Address;
+   uint16_t   	 observer_port;
+   uint16_t   	 optionID;
+   opentimer_id_t observe_Neighbor_Timer_Id;
+} coap_observer_t;
 
 typedef owerror_t (*callbackRx_cbt)(OpenQueueEntry_t* msg,
                                 coap_header_iht*  coap_header,

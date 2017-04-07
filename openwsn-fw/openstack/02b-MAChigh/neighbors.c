@@ -614,3 +614,10 @@ bool isThisRowMatching(open_addr_t* address, uint8_t rowNumber) {
          return FALSE;
    }
 }
+
+
+//=========================== A-K =========================================
+
+neighbors_vars_t* schedule_getNeighbor_Vars(){
+    return &neighbors_vars;
+}

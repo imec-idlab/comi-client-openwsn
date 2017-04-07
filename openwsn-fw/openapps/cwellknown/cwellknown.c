@@ -76,7 +76,6 @@ owerror_t cwellknown_receive(
          // set the CoAP header
          coap_header->Code   = COAP_CODE_RESP_CONTENT;
 
-     	openserial_printInfo(COMPONENT_LWM2M,ERR_AK_LWM2M,(errorparameter_t)1,(errorparameter_t)1);
          outcome             = E_SUCCESS;
          
          break;
