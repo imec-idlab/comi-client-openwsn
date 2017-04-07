@@ -1,0 +1,147 @@
+module ietf-6top {
+
+   namespace "http://6tisch.ietf.org/6top";
+
+   prefix "ietf";
+
+   description
+   "Abstract Data model for the 6top sub-layer, only for cell-list.";
+
+   revision 2017-03-27 {
+      description
+      "v0 revision.";
+   }
+
+   typedef nodeaddresstype {
+      type uint64;
+      description
+         "The type to store node address. It can be 64bits EUI address;
+         or the short address defined by 6top, constrained by TSCH 
+         macNodeAddress size, 2-octets. If using TSCH as MAC, the 
+         higher 6-octets should be filled with 0, and lowest 2-octets 
+         is neighbor short address";
+   }
+	}
+   
+   list CellList {
+         key "CellID";
+         min-elements 1;
+         unique "SlotframeID SlotOffset ChannelOffset";
+         description
+         "List of scheduled cells of a node with all of its neighbors,
+         in all of its slotframes.";
+
+         leaf CellID {
+            type uint16;
+            description
+            "Equal to Linkhandle in the linkTable of TSCH";
+            reference
+            "IEEE802154e";
+         }
+         leaf SlotframeID {
+            type leafref {
+               path "/SlotframeList/SlotframeID";
+            }
+            description
+            "SlotframeID, one in SlotframeList, indicates the slotframe
+            the cell belongs to.";
+            reference
+            "IEEE802154e";
+         }
+         leaf SlotOffset {
+            type uint16;
+            description
+            "Defined in IEEE802154e.";
+            reference
+            "IEEE802154e";
+         }
+         leaf ChannelOffset {
+            type uint16;
+            description
+            "Defined in IEEE802154e. Value range is 0..15";
+            reference
+            "IEEE802154e";
+         }
+         leaf LinkOption {
+            type bits {
+               bit Transmit {
+                  position 0;
+               }
+               bit Receive {
+                  position 1;
+               }
+               bit Share {
+                  position 2;
+               }
+               bit Timekeeping {
+                  position 3;
+               }
+            } 
+            description
+            "Defined in IEEE802154e.";
+            reference
+            "IEEE802154e";
+         }
+         leaf CellType {
+            type enumeration {
+               enum SOFT;
+               enum HARD;
+            }
+            description
+            "Defined in 6top";
+         }
+         leaf NodeAddress {
+            type nodeaddresstype;
+            description
+            "specify the target node address.";
+         }        
+         
+         leaf numTX {
+             type uint8;
+             description
+             "A-K defined";
+             reference
+             "A-K";
+          }
+         
+         leaf numTXACK {
+             type uint8;
+             description
+             "A-K defined";
+             reference
+             "A-K";
+          }
+      }
+   
+   list NeighborList {
+      key "NodeAddress";
+      description
+      "statistics per communication link. ";
+
+      leaf NodeAddress {
+         type nodeaddresstype;
+         description
+         "Specifies the address of the neighbor.";
+      }
+      
+      leaf RSSI {
+         type uint8;
+         config false;
+         description
+         "The received signal strength";
+      }
+      leaf LinkQuality {
+         type uint8;
+         config false;
+         description
+         "The LQI metric";
+      }
+      leaf ASN {
+         type asntype;
+         config false;
+         description
+         "The 5 ASN bytes, indicates the most recent timeslot when a
+         packet from the neighbor was received";
+      }
+   }
+}
