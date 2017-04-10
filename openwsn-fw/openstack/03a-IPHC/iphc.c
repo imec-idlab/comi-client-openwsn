@@ -120,6 +120,7 @@ owerror_t iphc_sendFromForwarding(
         }
     }
 
+
     //IPinIP 6LoRH will be added at here if necessary.
     if (packetfunctions_sameAddress(&temp_dest_prefix,&temp_src_prefix)){
         // same network, IPinIP is elided
@@ -166,7 +167,7 @@ owerror_t iphc_sendFromForwarding(
             // this is DIO, no IPinIP either
         }
     }
-    
+
     //prepend Option hop by hop header except when src routing and dst is not 0xffff
     //-- this is a little trick as src routing is using an option header set to 0x00
     if (
@@ -175,13 +176,13 @@ owerror_t iphc_sendFromForwarding(
     ){
         iphc_prependIPv6HopByHopHeader(msg, msg->l4_protocol, rpl_option);
     }
-    
+
     // copy RH3s back if length > 0
     if (rh3_length > 0){
         packetfunctions_reserveHeaderSize(msg,rh3_length);
         memcpy(&msg->payload[0],&rh3_copy[0],rh3_length);
     }
-    
+
     // if there are 6LoRH in the packet, add page dispatch no.1
     if (
         (*((uint8_t*)(msg->payload)) & FORMAT_6LORH_MASK) == CRITICAL_6LORH ||

@@ -22,7 +22,7 @@
 //=========================== define ==========================================
 
 
-#define MAX_PAYLOAD_SIZE 64		// since no 6lowpan fragmentation and coap block transfer is implemented, we limit the max payload size
+#define MAX_PAYLOAD_SIZE 128		// since no 6lowpan fragmentation and coap block transfer is implemented, we limit the max payload size
 
 
 //=========================== typedef =========================================

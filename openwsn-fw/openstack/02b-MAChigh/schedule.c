@@ -853,7 +853,8 @@ void schedule_housekeeping(){
 }
 
 
-// A-K
+//=========================== A-K =========================================
+
 void schedule_remove_allTXandRX_Cells(){
     uint8_t     i;
     INTERRUPT_DECLARATION();
@@ -871,10 +872,179 @@ void schedule_remove_allTXandRX_Cells(){
 }
 
 
-//A-K
 schedule_vars_t* schedule_getSchedule_Vars(){
     return &schedule_vars;
 }
+
+owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
+   scheduleEntry_t* slotContainer;
+   scheduleEntry_t* previousSlotWalker;
+
+   INTERRUPT_DECLARATION();
+   DISABLE_INTERRUPTS();
+   // find the schedule entry
+   if(cellID>=schedule_vars.maxActiveSlots){
+	   return E_FAIL;
+   }
+   slotContainer = &schedule_vars.scheduleBuf[cellID];
+
+   // abort it could not find
+   if (slotContainer>&schedule_vars.scheduleBuf[schedule_vars.maxActiveSlots-1]) {
+      ENABLE_INTERRUPTS();
+      openserial_printCritical(
+         COMPONENT_SCHEDULE,ERR_FREEING_ERROR,
+         (errorparameter_t)0,
+         (errorparameter_t)0
+      );
+      return E_FAIL;
+   }
+
+   // remove from linked list
+   if (slotContainer->next==slotContainer) {
+      // this is the last active slot
+
+      // the next slot of this slot is NULL
+      slotContainer->next                   = NULL;
+
+      // current slot points to this slot
+      schedule_vars.currentScheduleEntry    = NULL;
+   } else  {
+      // this is NOT the last active slot
+
+      // find the previous in the schedule
+      previousSlotWalker                    = schedule_vars.currentScheduleEntry;
+
+      while (1) {
+         if (previousSlotWalker->next==slotContainer){
+            break;
+         }
+         previousSlotWalker                 = previousSlotWalker->next;
+      }
+
+      // remove this element from the linked list, i.e. have the previous slot
+      // "jump" to slotContainer's next
+      previousSlotWalker->next              = slotContainer->next;
+
+      // update current slot if points to slot I just removed
+      if (schedule_vars.currentScheduleEntry==slotContainer) {
+         schedule_vars.currentScheduleEntry = slotContainer->next;
+      }
+   }
+
+   // reset removed schedule entry
+   schedule_resetEntry(slotContainer);
+
+   ENABLE_INTERRUPTS();
+
+   return E_SUCCESS;
+}
+
+owerror_t schedule_addActiveSlotByID(
+		uint8_t cellID,
+      slotOffset_t    slotOffset,
+      cellType_t      type,
+      bool            shared,
+      channelOffset_t channelOffset,
+      open_addr_t*    neighbor
+   ) {
+   scheduleEntry_t* slotContainer;
+   scheduleEntry_t* previousSlotWalker;
+   scheduleEntry_t* nextSlotWalker;
+
+   INTERRUPT_DECLARATION();
+   DISABLE_INTERRUPTS();
+
+   if(cellID>=schedule_vars.maxActiveSlots){
+   	   return E_FAIL;
+      }
+
+   // find an empty schedule entry container
+   slotContainer = &schedule_vars.scheduleBuf[cellID];
+
+   if(slotContainer->type!=CELLTYPE_OFF){
+   	   return E_FAIL;
+   }
+
+   // abort it schedule overflow
+   if (slotContainer>&schedule_vars.scheduleBuf[schedule_vars.maxActiveSlots-1]) {
+      ENABLE_INTERRUPTS();
+      openserial_printError(
+         COMPONENT_SCHEDULE,ERR_SCHEDULE_OVERFLOWN,
+         (errorparameter_t)0,
+         (errorparameter_t)0
+      );
+      return E_FAIL;
+   }
+
+   // fill that schedule entry with parameters passed
+   slotContainer->slotOffset                = slotOffset;
+   slotContainer->type                      = type;
+   slotContainer->shared                    = shared;
+   slotContainer->channelOffset             = channelOffset;
+   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+
+   // insert in circular list
+   if (schedule_vars.currentScheduleEntry==NULL) {
+      // this is the first active slot added
+
+      // the next slot of this slot is this slot
+      slotContainer->next                   = slotContainer;
+
+      // current slot points to this slot
+      schedule_vars.currentScheduleEntry    = slotContainer;
+   } else  {
+      // this is NOT the first active slot added
+
+      // find position in schedule
+      previousSlotWalker                    = schedule_vars.currentScheduleEntry;
+      while (1) {
+         nextSlotWalker                     = previousSlotWalker->next;
+         if (
+               (
+                     (previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
+                     (slotContainer->slotOffset <  nextSlotWalker->slotOffset)
+               )
+               ||
+               (
+                     (previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
+                     (nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
+               )
+               ||
+               (
+                     (slotContainer->slotOffset <  nextSlotWalker->slotOffset) &&
+                     (nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
+               )
+         ) {
+            break;
+         }
+         if (previousSlotWalker->slotOffset == slotContainer->slotOffset) {
+            // slot is already in schedule
+            openserial_printError(
+               COMPONENT_SCHEDULE,ERR_SCHEDULE_ADDDUPLICATESLOT,
+               (errorparameter_t)slotContainer->slotOffset,
+               (errorparameter_t)0
+            );
+            // reset the entry
+            slotContainer->slotOffset                = 0;
+            slotContainer->type                      = CELLTYPE_OFF;
+            slotContainer->shared                    = FALSE;
+            slotContainer->channelOffset             = 0;
+            memset(&slotContainer->neighbor,0,sizeof(open_addr_t));
+            ENABLE_INTERRUPTS();
+            return E_FAIL;
+         }
+         previousSlotWalker                 = nextSlotWalker;
+      }
+      // insert between previousSlotWalker and nextSlotWalker
+      previousSlotWalker->next              = slotContainer;
+      slotContainer->next                   = nextSlotWalker;
+   }
+
+   ENABLE_INTERRUPTS();
+   return E_SUCCESS;
+}
+
+
 //=========================== private =========================================
 
 /**

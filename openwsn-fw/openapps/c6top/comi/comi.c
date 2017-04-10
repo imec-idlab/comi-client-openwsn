@@ -16,6 +16,7 @@
 //=========================== variables =======================================
 
 comi_vars_t comi_vars;
+
 //=========================== prototypes ======================================
 
 owerror_t comi_receive(
@@ -117,4 +118,6 @@ uint8_t str2uint8 (const char* str, uint8_t len)
 void comi_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
 	openqueue_freePacketBuffer(msg);
 }
+
+
 

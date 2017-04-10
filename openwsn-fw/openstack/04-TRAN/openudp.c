@@ -21,6 +21,13 @@ void openudp_init() {
 }
 
 owerror_t openudp_send(OpenQueueEntry_t* msg) {
+
+	//A-K
+	if(msg->length>80){
+        openserial_printError(COMPONENT_OPENUDP,ERR_LONG_PACKET, (errorparameter_t)msg->length, (errorparameter_t)5);
+        return E_FAIL;
+	}
+
     uint8_t* checksum_position;
     msg->owner       = COMPONENT_OPENUDP;
     msg->l4_protocol = IANA_UDP;
@@ -55,7 +62,6 @@ owerror_t openudp_send(OpenQueueEntry_t* msg) {
 
     // fill in the header in the packet
     if (msg->l4_protocol_compressed){
-
         //add checksum space in the packet.
         packetfunctions_reserveHeaderSize(msg,2);
         //keep position and calculatre checksum at the end.
@@ -116,7 +122,6 @@ owerror_t openudp_send(OpenQueueEntry_t* msg) {
         //TODO check this as the lenght MUST be ommited.
         packetfunctions_htons(msg->length,&(msg->payload[4]));
         packetfunctions_calculateChecksum(msg,(uint8_t*)&(((udp_ht*)msg->payload)->checksum));
-
     }
     return forwarding_send(msg);
 }

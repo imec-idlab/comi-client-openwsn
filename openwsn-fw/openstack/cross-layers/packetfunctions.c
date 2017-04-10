@@ -266,6 +266,7 @@ void packetfunctions_writeAddress(OpenQueueEntry_t* msg, open_addr_t* address, b
 //======= reserving/tossing headers
 
 void packetfunctions_reserveHeaderSize(OpenQueueEntry_t* pkt, uint8_t header_length) {
+
    pkt->payload -= header_length;
    pkt->length  += header_length;
    if ( (uint8_t*)(pkt->payload) < (uint8_t*)(pkt->packet) ) {

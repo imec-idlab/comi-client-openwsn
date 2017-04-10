@@ -20,47 +20,21 @@
 
 //=========================== defines =========================================
  uint8_t comi_path_celllist[COMI_PATH_SIZE];			// 4001
- uint8_t comi_path_cellid[COMI_PATH_SIZE];				// 4002
- uint8_t comi_path_slotframeid[COMI_PATH_SIZE];			// 4003
- uint8_t comi_path_slotoffset[COMI_PATH_SIZE];			// 4004
- uint8_t comi_path_choffset[COMI_PATH_SIZE];			// 4005
- uint8_t comi_path_linkoption[COMI_PATH_SIZE] ;			// 4006
- uint8_t comi_path_nodeaddress[COMI_PATH_SIZE];			// 4007
- uint8_t comi_path_stats[COMI_PATH_SIZE];				// 4008
- uint8_t comi_path_cell_lastasn[COMI_PATH_SIZE];		// 4009
-
  uint8_t comi_path_neighborlist[COMI_PATH_SIZE];		// 4011
- uint8_t comi_path_neighborAddress[COMI_PATH_SIZE];		// 4012
- uint8_t comi_path_rssi[COMI_PATH_SIZE] ;				// 4013
- uint8_t comi_path_lqi[COMI_PATH_SIZE];					// 4014
- uint8_t comi_path_asn[COMI_PATH_SIZE];					// 4015
 //=========================== variables =======================================
 
 c6top_vars_t c6top_vars;
 //=========================== prototypes ======================================
 
 owerror_t comi_celllist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_cellid_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header,	coap_option_iht*  coap_options);
-owerror_t comi_slotframeid_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_slotoffset_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_choffset_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_linkoption_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_nodeaddr_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_stats_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_lastasn_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-
 owerror_t comi_neighborlist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_neighboraddr_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_rssi_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_lqi_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_asn_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
 
 
 void comi_celllist_register(c6top_vars_t* c6top_vars);
 void comi_neighborlist_register(c6top_vars_t* c6top_vars);
 void comi_send_neighbor_notification(void);
 void comi_neighbor_observer_cb(opentimer_id_t id);
-void c6top_register_observer(observer_t* neighbor_observer, coap_header_iht*  coap_header);
+void c6top_register_observer(observer_t* neighbor_observer, OpenQueueEntry_t* msg, coap_header_iht*  coap_header);
 void c6top_deregister_observer(observer_t* neighbor_observer);
 
 //=========================== public ==========================================
@@ -101,66 +75,6 @@ void comi_celllist_register(
 	c6top_vars->comi_celllist.desc.callbackSendDone = &c6top_sendDone;
 	// register with the CoAP module
 	opencoap_register(&c6top_vars->comi_celllist.desc);
-
-	// Register Slot Offset
-	path1len=base64_encode(SID_comi_slotoffset,&comi_path_slotoffset[0]);
-	c6top_vars->comi_celllist.slotOffset_desc.path0len   = sizeof(comi_path)-1;
-	c6top_vars->comi_celllist.slotOffset_desc.path0val   = (uint8_t*)(&comi_path);
-	c6top_vars->comi_celllist.slotOffset_desc.path1len   = path1len;
-	c6top_vars->comi_celllist.slotOffset_desc.path1val   = &comi_path_slotoffset[0];
-	c6top_vars->comi_celllist.slotOffset_desc.path2len   = 0;
-	c6top_vars->comi_celllist.slotOffset_desc.path2val   = NULL;
-	c6top_vars->comi_celllist.slotOffset_desc.componentID      = COMPONENT_COMI;
-	c6top_vars->comi_celllist.slotOffset_desc.discoverable     = TRUE;
-	c6top_vars->comi_celllist.slotOffset_desc.callbackRx       = &comi_slotoffset_receive;
-	c6top_vars->comi_celllist.slotOffset_desc.callbackSendDone = &c6top_sendDone;
-	// register with the CoAP module
-	opencoap_register(&c6top_vars->comi_celllist.slotOffset_desc);
-
-	// Register Channel Offset
-	path1len=base64_encode(SID_comi_choffset,&comi_path_choffset[0]);
-	c6top_vars->comi_celllist.chOffset_desc.path0len   = sizeof(comi_path)-1;
-	c6top_vars->comi_celllist.chOffset_desc.path0val   = (uint8_t*)(&comi_path);
-	c6top_vars->comi_celllist.chOffset_desc.path1len   = path1len;
-	c6top_vars->comi_celllist.chOffset_desc.path1val   = &comi_path_choffset[0];
-	c6top_vars->comi_celllist.chOffset_desc.path2len   = 0;
-	c6top_vars->comi_celllist.chOffset_desc.path2val   = NULL;
-	c6top_vars->comi_celllist.chOffset_desc.componentID      = COMPONENT_COMI;
-	c6top_vars->comi_celllist.chOffset_desc.discoverable     = TRUE;
-	c6top_vars->comi_celllist.chOffset_desc.callbackRx       = &comi_choffset_receive;
-	c6top_vars->comi_celllist.chOffset_desc.callbackSendDone = &c6top_sendDone;
-	// register with the CoAP module
-	opencoap_register(&c6top_vars->comi_celllist.chOffset_desc);
-
-	// Register Link Options
-	path1len=base64_encode(SID_comi_linkoption,&comi_path_linkoption[0]);
-	c6top_vars->comi_celllist.linkOpt_desc.path0len   = sizeof(comi_path)-1;
-	c6top_vars->comi_celllist.linkOpt_desc.path0val   = (uint8_t*)(&comi_path);
-	c6top_vars->comi_celllist.linkOpt_desc.path1len   = path1len;
-	c6top_vars->comi_celllist.linkOpt_desc.path1val   = &comi_path_linkoption[0];
-	c6top_vars->comi_celllist.linkOpt_desc.path2len   = 0;
-	c6top_vars->comi_celllist.linkOpt_desc.path2val   = NULL;
-	c6top_vars->comi_celllist.linkOpt_desc.componentID      = COMPONENT_COMI;
-	c6top_vars->comi_celllist.linkOpt_desc.discoverable     = TRUE;
-	c6top_vars->comi_celllist.linkOpt_desc.callbackRx       = &comi_linkoption_receive;
-	c6top_vars->comi_celllist.linkOpt_desc.callbackSendDone = &c6top_sendDone;
-	// register with the CoAP module
-	opencoap_register(&c6top_vars->comi_celllist.linkOpt_desc);
-
-	// Register Node Address
-	path1len=base64_encode(SID_comi_nodeaddr,&comi_path_nodeaddress[0]);
-	c6top_vars->comi_celllist.nodeAddr_desc.path0len   = sizeof(comi_path)-1;
-	c6top_vars->comi_celllist.nodeAddr_desc.path0val   = (uint8_t*)(&comi_path);
-	c6top_vars->comi_celllist.nodeAddr_desc.path1len   = path1len;
-	c6top_vars->comi_celllist.nodeAddr_desc.path1val   = &comi_path_nodeaddress[0];
-	c6top_vars->comi_celllist.nodeAddr_desc.path2len   = 0;
-	c6top_vars->comi_celllist.nodeAddr_desc.path2val   = NULL;
-	c6top_vars->comi_celllist.nodeAddr_desc.componentID      = COMPONENT_COMI;
-	c6top_vars->comi_celllist.nodeAddr_desc.discoverable     = TRUE;
-	c6top_vars->comi_celllist.nodeAddr_desc.callbackRx       = &comi_nodeaddr_receive;
-	c6top_vars->comi_celllist.nodeAddr_desc.callbackSendDone = &c6top_sendDone;
-	// register with the CoAP module
-	opencoap_register(&c6top_vars->comi_celllist.nodeAddr_desc);
 }
 
 /**
@@ -206,234 +120,70 @@ owerror_t comi_celllist_receive(
 			msg->length                      = 0;
 
 			uint8_t pos=0;
-			uint8_t id;
+
 			uint16_t maxActiveSlots=schedule_getMaxActiveSlots();
 			uint8_t comi_payload[MAX_PAYLOAD_SIZE];
-			uint8_t cell_payload[MAX_PAYLOAD_SIZE-1];
 
-			if (comi_getKey(&coap_options[2],&id)==1){
-					if(id<maxActiveSlots){
-						pos=pos+comi_serialize_cell(&comi_payload[pos],id);
+			uint8_t key=0;
+			if (comi_getKey(&coap_options[2],&key)==1){
+					if(key<maxActiveSlots){
+						pos=pos+comi_serialize_cell(&comi_payload[pos],key);
 					}
 					else{
 						openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)33, (errorparameter_t)33);
 					}
 			}else{
 				uint8_t i;
+				pos=1;
 				for(i=0;i<maxActiveSlots;i++){
 					if(c6top_vars.comi_celllist.schedule_vars->scheduleBuf[i].next==NULL || pos>=MAX_PAYLOAD_SIZE-1){
 						if(i>0){
 							comi_payload[0]= cbor_serialize_array(i);
-							memcpy(&comi_payload[1],&cell_payload[0],pos);
-							pos=pos+1;
 						}
 						i=maxActiveSlots;
 					}
 					else{
-						pos=pos+comi_serialize_cell(&cell_payload[pos],i);
+						pos=pos+comi_serialize_cell(&comi_payload[pos],i);
 					}
 				}
 			}
-
 			packetfunctions_reserveHeaderSize(msg,pos);
 			memcpy(&msg->payload[0],&comi_payload[0],pos);
 
 			packetfunctions_reserveHeaderSize(msg,1);
 			msg->payload[0]  = COAP_PAYLOAD_MARKER;
-
-
-			// add return option
+				// add return option
 			packetfunctions_reserveHeaderSize(msg,2);
 			msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
 			msg->payload[1]     = COAP_MEDTYPE_CBOR;
 
-			// set the CoAP header
+				// set the CoAP header
 			coap_header->Code                = COAP_CODE_RESP_CONTENT;
 			outcome                          = E_SUCCESS;
+
 			break;
 
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_cellid_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_slotframeid_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_slotoffset_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
+		case COAP_CODE_REQ_POST:
 
 
-	switch (coap_header->Code) {
-		case COAP_CODE_REQ_GET:
 			// reset packet payload
-			msg->payload                     = &(msg->packet[127]);
-			msg->length                      = 0;
-			uint8_t comi_payload[MAX_PAYLOAD_SIZE];
-			uint8_t pos=0;
-			uint8_t id;
-			uint16_t maxActiveSlots=schedule_getMaxActiveSlots();
+	          msg->payload                  = &(msg->packet[127]);
+	          msg->length                   = 0;
+			if( 1 ){
 
-			if (comi_getKey(&coap_options[2],&id)==1){
-					if(id<maxActiveSlots){
-						pos=pos+comi_serialize_slotoffset(&comi_payload[pos],SID_comi_slotoffset,id);
-					}
-					else{
-						openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)34, (errorparameter_t)34);
-					}
-			}else{
-				uint8_t i;
-				uint16_t maxActiveSlots=schedule_getMaxActiveSlots();
-				uint8_t cell_payload[MAX_PAYLOAD_SIZE-1];
-				for(i=0;i<maxActiveSlots;i++){
-					if(c6top_vars.comi_celllist.schedule_vars->scheduleBuf[i].next==NULL || pos>=MAX_PAYLOAD_SIZE-1){
-						if(i>0){
-							comi_payload[0]= cbor_serialize_array(i);
-							memcpy(&comi_payload[1],&cell_payload[0],pos);
-							pos=pos+1;
-						}
-						i=maxActiveSlots;
-					}
-					else{
+				//schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset, cellType_t type, bool shared,channelOffset_t channelOffset,open_addr_t* neighbor);
 
-						pos=pos+comi_serialize_slotoffset(&cell_payload[pos],SID_comi_slotoffset,i);
-					}
-				}
+	          // set the CoAP header
+		          coap_header->Code             = COAP_CODE_RESP_CREATED;
+		          outcome                       = E_SUCCESS;
+			}
+			else{
+			// set the CoAP header
+	          coap_header->Code                = COAP_CODE_RESP_CONFLICT;
+	          outcome                          = E_FAIL;
 			}
 
-			packetfunctions_reserveHeaderSize(msg,pos);
-			memcpy(&msg->payload[0],&comi_payload[0],pos);
-
-			packetfunctions_reserveHeaderSize(msg,1);
-			msg->payload[0]  = COAP_PAYLOAD_MARKER;
-
-
-			// add return option
-			packetfunctions_reserveHeaderSize(msg,2);
-			msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
-			msg->payload[1]     = COAP_MEDTYPE_CBOR;
-
-			// set the CoAP header
-			coap_header->Code                = COAP_CODE_RESP_CONTENT;
-			outcome                          = E_SUCCESS;
 			break;
-
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_choffset_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_linkoption_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_nodeaddr_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_stats_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_lastasn_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
 		default:
 			outcome = E_FAIL;
 			break;
@@ -485,7 +235,7 @@ owerror_t comi_neighborlist_receive(
 				if (coap_options[0].type == COAP_OPTION_NUM_OBSERVE) {
 
 					if(coap_options[0].length==0){
-						c6top_register_observer(&c6top_vars.comi_neighborlist.neighbor_observer, &coap_header[0]);
+						c6top_register_observer(&c6top_vars.comi_neighborlist.neighbor_observer, msg,&coap_header[0]);
 					}
 					else{
 						c6top_deregister_observer(&c6top_vars.comi_neighborlist.neighbor_observer);
@@ -529,78 +279,14 @@ owerror_t comi_neighborlist_receive(
 
 	return outcome;
 }
-owerror_t comi_neighboraddr_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
 
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_rssi_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_lqi_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
-owerror_t comi_asn_receive(
-		OpenQueueEntry_t* msg,
-		coap_header_iht*  coap_header,
-		coap_option_iht*  coap_options
-) {
-
-	owerror_t            outcome;
-
-	switch (coap_header->Code) {
-		default:
-			outcome = E_FAIL;
-			break;
-	}
-
-	return outcome;
-}
 
 
 /* serialize cell with cellid */
 uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
 {
 	uint8_t size=0;
-
-	comi_payload_curser[size] = cbor_serialize_map(0x07);
+	comi_payload_curser[size] = cbor_serialize_map(0x08);
 	size++;
 
 	// write cellid
@@ -608,8 +294,8 @@ uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], cell_id);
 
 	// write slotframeid
-//	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_slotframeid-SID_comi_celllist);
-//	size = size + cbor_serialize_uint8(&comi_payload_curser[size], c6top_vars.comi_celllist.schedule_vars->frameNumber);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_slotframeid-SID_comi_celllist);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], c6top_vars.comi_celllist.schedule_vars->frameNumber);
 
 	// write slot offset
 	size = size + comi_serialize_slotoffset(&comi_payload_curser[size],SID_comi_celllist,cell_id);
@@ -641,7 +327,6 @@ uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
 	// write last byte of last asn
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_lastasn-SID_comi_celllist);
 	size = size + cbor_serialize_byte(&comi_payload_curser[size],&c6top_vars.comi_celllist.schedule_vars->scheduleBuf[cell_id].lastUsedAsn.byte4,1);
-
 	return size;
 }
 
@@ -800,7 +485,7 @@ void comi_send_neighbor_notification() {
 	      }
 }
 
-void c6top_register_observer(observer_t* neighbor_observer, coap_header_iht*  coap_header){
+void c6top_register_observer(observer_t* neighbor_observer, OpenQueueEntry_t* msg, coap_header_iht*  coap_header){
 
 	if(c6top_vars.comi_neighborlist.neighbor_observer.observer_Address.type!=ADDR_NONE){
 		opentimers_stop(c6top_vars.comi_neighborlist.neighbor_observer.observe_Neighbor_Timer_Id);
@@ -821,8 +506,6 @@ void c6top_deregister_observer(observer_t* neighbor_observer){
 	c6top_vars.comi_neighborlist.neighbor_observer.observer_Address.type=ADDR_NONE;
 	}
 }
-
-
 
 void c6top_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
 	openqueue_freePacketBuffer(msg);

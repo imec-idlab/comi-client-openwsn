@@ -141,7 +141,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       
       // start with the first resource in the linked list
       temp_desc = opencoap_vars.resources;
-      
+
       // iterate until matching resource found, or no match
       while (found==FALSE) {
     	  if (           coap_options[posURIPath].type==COAP_OPTION_NUM_URIPATH    &&
@@ -257,7 +257,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       // stop here: will will not respond to a response
       return;
    }
-   
+
    //=== step 3. ask the resource to prepare response
    
    if (found==TRUE) {
@@ -271,7 +271,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
     //  coap_header.TKL                  = 0;	//A-K Changed.I think there was a bug
       coap_header.Code                 = COAP_CODE_RESP_NOTFOUND;
    }
-   
+
    if (outcome==E_FAIL) {
       // reset packet payload (DO NOT DELETE, we will reuse same buffer for response)
       msg->payload                     = &(msg->packet[127]);
@@ -313,7 +313,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
    msg->payload[2]                  = coap_header.messageID/256;
    msg->payload[3]                  = coap_header.messageID%256;
    memcpy(&msg->payload[4], &coap_header.token[0], coap_header.TKL);
-   
+
    if ((openudp_send(msg))==E_FAIL) {
       openqueue_freePacketBuffer(msg);
    }

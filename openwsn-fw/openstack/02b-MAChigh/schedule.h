@@ -205,6 +205,8 @@ void               schedule_indicateTx(
 
 void               schedule_housekeeping();
 void		       schedule_remove_allTXandRX_Cells(void);
+owerror_t 		   schedule_removeActiveSlotByID(uint8_t cellID);
+owerror_t 			schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset, cellType_t type, bool shared,channelOffset_t channelOffset,open_addr_t* neighbor);
 schedule_vars_t* 	schedule_getSchedule_Vars(void);
 /**
 \}

@@ -1,6 +1,6 @@
 # DO NOT EDIT DIRECTLY!
 # This file was generated automatically by GenStackDefines.py
-# on Mon, 06 Mar 2017 16:08:44
+# on Fri, 07 Apr 2017 09:25:58
 #
 
 components = {
@@ -46,6 +46,10 @@ components = {
   39: "USERIALBRIDGE",
   40: "COMI",
   41: "LWM2M",
+  48: "LWM2M_DEVICE",
+  49: "LWM2M_TEMP",
+  50: "LWM2M_HUM",
+  51: "LWM2M_LED",
 }
 
 errorDescriptions = {
@@ -113,8 +117,9 @@ errorDescriptions = {
   62: "the cells reserved to request mote contains slot {0} and slot {1}",
   63: "the slot {0} to be added is already in schedule",
   64: "packet received rssi: {0} lqi: {1}",
-  65: "COMI message: {0}",
+  65: "COMI message: {0} msg: {1}",
   66: "LWM2M message: {0} msg: {1}",
+  67: "the coap is trying to send long packet: {0} (code location {1})",
 }
 
 sixtop_returncode = {

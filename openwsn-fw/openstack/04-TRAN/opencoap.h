@@ -65,6 +65,7 @@ typedef enum {
    COAP_CODE_RESP_FORBIDDEN            = 131,
    COAP_CODE_RESP_NOTFOUND             = 132,
    COAP_CODE_RESP_METHODNOTALLOWED     = 133,
+   COAP_CODE_RESP_CONFLICT			   = 137,
    COAP_CODE_RESP_PRECONDFAILED        = 140,
    COAP_CODE_RESP_REQTOOLARGE          = 141,
    COAP_CODE_RESP_UNSUPPMEDIATYPE      = 143,
@@ -157,7 +158,6 @@ struct coap_resource_desc_t {
 };
 
 //=========================== module variables ================================
-
 typedef struct {
    coap_resource_desc_t* resources;
    bool                  busySending;
@@ -183,6 +183,7 @@ owerror_t     opencoap_send(
     uint8_t               numOptions,
     coap_resource_desc_t* descSender
 );
+
 
 /**
 \}
