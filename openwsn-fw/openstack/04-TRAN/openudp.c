@@ -13,13 +13,23 @@
 
 //=========================== variables =======================================
 
-//=========================== prototypes ======================================
+	openudp_vars_t openudp_vars;
 
+//=========================== prototypes ======================================
+	static void openudp_sendDone_default_handler(OpenQueueEntry_t* msg, owerror_t error);
+	static void openudp_receive_default_handler(OpenQueueEntry_t* msg);
 //=========================== public ==========================================
 
-void openudp_init() {
-}
+	void openudp_init() {
+		// initialize the resource linked list
+		openudp_vars.resources = NULL;
+	}
 
+	void openudp_register(udp_resource_desc_t* desc) {
+		// chain the new resource to head of resource list
+		desc->next = openudp_vars.resources;
+		openudp_vars.resources = desc;
+	}
 owerror_t openudp_send(OpenQueueEntry_t* msg) {
 
 	//A-K
@@ -127,36 +137,42 @@ owerror_t openudp_send(OpenQueueEntry_t* msg) {
 }
 
 void openudp_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
-   msg->owner = COMPONENT_OPENUDP;
-   switch(msg->l4_sourcePortORicmpv6Type) {
-      case WKP_UDP_COAP:
-         opencoap_sendDone(msg,error);
-         break;
-      case WKP_UDP_ECHO:
-         uecho_sendDone(msg,error);
-         break;
-      case WKP_UDP_INJECT:
-         uinject_sendDone(msg,error);
-         break;
-      case WKP_UDP_SERIALBRIDGE:
-         userialbridge_sendDone(msg,error);
-         break;
-      case WKP_UDP_RINGMASTER:
-	 //udpprint_sendDone(msg, error);
-         rrt_sendDone(msg, error);
-         break;
-      default:
-         openserial_printError(COMPONENT_OPENUDP,ERR_UNSUPPORTED_PORT_NUMBER,
-                               (errorparameter_t)msg->l4_sourcePortORicmpv6Type,
-                               (errorparameter_t)5);
-         openqueue_freePacketBuffer(msg);         
-   }
+
+	udp_resource_desc_t* resource;
+	udp_callbackSendDone_cbt udp_send_done_callback_ptr = NULL;
+
+	msg->owner = COMPONENT_OPENUDP;
+
+	// iterate list of registered resources
+	resource = openudp_vars.resources;
+	while (resource != NULL) {
+		if (resource->port == msg->l4_sourcePortORicmpv6Type) {
+			// there is a registration for this port, either forward the send completion or simply release the message
+			udp_send_done_callback_ptr = (resource->callbackSendDone == NULL) ? openudp_sendDone_default_handler
+					: resource->callbackSendDone;
+			break;
+		}
+		resource = resource->next;
+	}
+	if (udp_send_done_callback_ptr == NULL) {
+		openserial_printError(COMPONENT_OPENUDP,ERR_UNSUPPORTED_PORT_NUMBER,
+				(errorparameter_t)msg->l4_sourcePortORicmpv6Type,
+				(errorparameter_t)5);
+		openqueue_freePacketBuffer(msg);
+		return;
+	}
+
+	// handle send completion
+	udp_send_done_callback_ptr(msg, error);
 }
 
 void openudp_receive(OpenQueueEntry_t* msg) {
    uint8_t temp_8b;
       
-   msg->owner                      = COMPONENT_OPENUDP;
+   udp_resource_desc_t* resource;
+   udp_callbackReceive_cbt udp_receive_done_callback_ptr = NULL;
+   msg->owner = COMPONENT_OPENUDP;
+
    if (msg->l4_protocol_compressed==TRUE) {
       // get the UDP header encoding byte
       temp_8b = *((uint8_t*)(msg->payload));
@@ -196,30 +212,26 @@ void openudp_receive(OpenQueueEntry_t* msg) {
       msg->l4_destination_port        = msg->payload[2]*256+msg->payload[3];
       packetfunctions_tossHeader(msg,sizeof(udp_ht));
    }
-   
-   switch(msg->l4_destination_port) {
-      case WKP_UDP_COAP:
-         opencoap_receive(msg);
-         break;
-      case WKP_UDP_RINGMASTER:
-         if (msg->l4_payload[0] > 90) {
-            rrt_sendCoAPMsg('B', NULL);
-         }
 
-         openqueue_freePacketBuffer(msg);
-         break;
-      case WKP_UDP_ECHO:
-         uecho_receive(msg);
-         break;
-      case WKP_UDP_INJECT:
-         uinject_receive(msg);
-         break;
-      default:
-         openserial_printError(COMPONENT_OPENUDP,ERR_UNSUPPORTED_PORT_NUMBER,
-                               (errorparameter_t)msg->l4_destination_port,
-                               (errorparameter_t)6);
-         openqueue_freePacketBuffer(msg);         
+   // iterate list of registered resources
+   resource = openudp_vars.resources;
+   while (NULL != resource) {
+	   if (resource->port == msg->l4_destination_port) {
+		   udp_receive_done_callback_ptr = (resource->callbackReceive == NULL) ? openudp_receive_default_handler
+				   : resource->callbackReceive;
+		   break;
+	   }
+	   resource = resource->next;
    }
+   if (udp_receive_done_callback_ptr == NULL) {
+	   openserial_printError(COMPONENT_OPENUDP,ERR_UNSUPPORTED_PORT_NUMBER,
+			   (errorparameter_t)msg->l4_destination_port,
+			   (errorparameter_t)6);
+	   openqueue_freePacketBuffer(msg);
+   }
+
+   // forward message to resource
+   udp_receive_done_callback_ptr(msg);
 }
 
 bool openudp_debugPrint() {
@@ -227,3 +239,11 @@ bool openudp_debugPrint() {
 }
 
 //=========================== private =========================================
+
+static void openudp_sendDone_default_handler(OpenQueueEntry_t* msg, owerror_t error) {
+   openqueue_freePacketBuffer(msg);
+}
+
+static void openudp_receive_default_handler(OpenQueueEntry_t* msg) {
+   openqueue_freePacketBuffer(msg);
+}

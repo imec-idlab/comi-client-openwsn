@@ -839,3 +839,11 @@ void icmpv6rpl_setDAOPeriod(uint16_t daoPeriod){
        daoPeriodRandom
    );
 }
+
+
+
+//=========================== A-K =========================================
+
+icmpv6rpl_vars_t* get_icmpv6rpl_vars(){
+    return &icmpv6rpl_vars;
+}

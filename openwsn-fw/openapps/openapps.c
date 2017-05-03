@@ -17,6 +17,7 @@
 #include "cwellknown.h"
 #include "lwm2m.h"
 #include "lwm2m_dev.h"
+#include "coap_rd.h"
 #include "rrt.h"
 // TCP
 #include "techo.h"
@@ -33,6 +34,7 @@
 //=========================== private =========================================
 
 void openapps_init(void) {
+
    // CoAP
   // c6t_init();
  //  cinfo_init();
@@ -45,8 +47,8 @@ void openapps_init(void) {
    // TCP
   // techo_init();
    c6top_init();
-  // lwm2m_init();
+   coap_rd_init();
+   // lwm2m_init();
  //  lwm2m_dev_init();
-   // UDP
-//   uecho_init();
+
 }

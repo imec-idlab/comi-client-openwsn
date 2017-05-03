@@ -239,7 +239,6 @@ void rrt_sendCoAPMsg(char actionMsg, uint8_t *ipv6mote) {
 
       //metada
       pkt->l4_destination_port   = WKP_UDP_RINGMASTER; 
-      pkt->l4_sourcePortORicmpv6Type   = WKP_UDP_RINGMASTER;
       pkt->l3_destinationAdd.type = ADDR_128B;
       
       // set destination address here

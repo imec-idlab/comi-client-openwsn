@@ -101,7 +101,6 @@ owerror_t iphc_sendFromForwarding(
             ipv6_inner_header->hop_limit--;
         }
     }
-   
     packetfunctions_ip128bToMac64b(&(msg->l3_destinationAdd),&temp_dest_prefix,&temp_dest_mac64b);
     //xv poipoi -- get the src prefix as well
     packetfunctions_ip128bToMac64b(&(msg->l3_sourceAdd),&temp_src_prefix,&temp_src_mac64b);
@@ -119,7 +118,6 @@ owerror_t iphc_sendFromForwarding(
             sam = IPHC_SAM_ELIDED;
         }
     }
-
 
     //IPinIP 6LoRH will be added at here if necessary.
     if (packetfunctions_sameAddress(&temp_dest_prefix,&temp_src_prefix)){

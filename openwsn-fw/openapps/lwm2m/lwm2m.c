@@ -94,9 +94,9 @@ void lwm2m_init() {
    lwm2m_server.desc.callbackSendDone = &lwm2m_sendDone;
 	opencoap_register(&lwm2m_server.desc);
 
-   lwm2m_server.leshan.timerId   = opentimers_start(LESHANPERIOD,
-                                              TIMER_PERIODIC,TIME_MS,
-  											lwm2m_register_server_cb);
+//   lwm2m_server.leshan.timerId   = opentimers_start(LESHANPERIOD,
+//                                              TIMER_PERIODIC,TIME_MS,
+//  											lwm2m_register_server_cb);
 }
 
 //=========================== private =========================================

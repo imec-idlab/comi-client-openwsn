@@ -6,6 +6,7 @@
 #include "sixtop.h"
 #include "idmanager.h"
 #include "sf0.h"
+#include "icmpv6rpl.h"
 
 //=========================== variables =======================================
 
@@ -884,20 +885,10 @@ owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
    DISABLE_INTERRUPTS();
    // find the schedule entry
    if(cellID>=schedule_vars.maxActiveSlots){
+	   ENABLE_INTERRUPTS();
 	   return E_FAIL;
    }
    slotContainer = &schedule_vars.scheduleBuf[cellID];
-
-   // abort it could not find
-   if (slotContainer>&schedule_vars.scheduleBuf[schedule_vars.maxActiveSlots-1]) {
-      ENABLE_INTERRUPTS();
-      openserial_printCritical(
-         COMPONENT_SCHEDULE,ERR_FREEING_ERROR,
-         (errorparameter_t)0,
-         (errorparameter_t)0
-      );
-      return E_FAIL;
-   }
 
    // remove from linked list
    if (slotContainer->next==slotContainer) {
@@ -942,9 +933,9 @@ owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
 owerror_t schedule_addActiveSlotByID(
 		uint8_t cellID,
       slotOffset_t    slotOffset,
+      channelOffset_t channelOffset,
       cellType_t      type,
       bool            shared,
-      channelOffset_t channelOffset,
       open_addr_t*    neighbor
    ) {
    scheduleEntry_t* slotContainer;
@@ -955,13 +946,14 @@ owerror_t schedule_addActiveSlotByID(
    DISABLE_INTERRUPTS();
 
    if(cellID>=schedule_vars.maxActiveSlots){
+	      ENABLE_INTERRUPTS();
    	   return E_FAIL;
       }
 
-   // find an empty schedule entry container
    slotContainer = &schedule_vars.scheduleBuf[cellID];
 
    if(slotContainer->type!=CELLTYPE_OFF){
+	      ENABLE_INTERRUPTS();
    	   return E_FAIL;
    }
 
@@ -1017,6 +1009,7 @@ owerror_t schedule_addActiveSlotByID(
          ) {
             break;
          }
+
          if (previousSlotWalker->slotOffset == slotContainer->slotOffset) {
             // slot is already in schedule
             openserial_printError(
@@ -1035,11 +1028,14 @@ owerror_t schedule_addActiveSlotByID(
          }
          previousSlotWalker                 = nextSlotWalker;
       }
+
+
+      openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t) previousSlotWalker->slotOffset, (errorparameter_t)nextSlotWalker->slotOffset);
+      openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t) previousSlotWalker->channelOffset, (errorparameter_t)nextSlotWalker->channelOffset);
       // insert between previousSlotWalker and nextSlotWalker
       previousSlotWalker->next              = slotContainer;
       slotContainer->next                   = nextSlotWalker;
    }
-
    ENABLE_INTERRUPTS();
    return E_SUCCESS;
 }

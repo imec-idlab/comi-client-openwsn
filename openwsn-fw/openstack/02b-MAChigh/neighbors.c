@@ -392,7 +392,7 @@ uint16_t neighbors_getLinkMetric(uint8_t index) {
    // we assume that this neighbor has already been checked for being in use         
    // calculate link cost to this neighbor
    if (neighbors_vars.neighbors[index].numTxACK==0) {
-      rankIncrease = DEFAULTLINKCOST*2*MINHOPRANKINCREASE;
+      rankIncrease = (3*DEFAULTLINKCOST-2)*MINHOPRANKINCREASE;
    } else {
       //6TiSCH minimal draft using OF0 for rank computation: ((3*numTx/numTxAck)-2)*minHopRankIncrease
       // numTx is on 8 bits, so scaling up 10 bits won't lead to saturation
@@ -417,6 +417,26 @@ void  neighbors_removeOld() {
     bool       haveParent;
     uint8_t    neighborIndexWithLowestRank[3];
     dagrank_t  lowestRank;
+
+    PORT_RADIOTIMER_WIDTH timeSinceHeard;
+
+    // remove old neighbor
+    for (i=0;i<MAXNUMNEIGHBORS;i++) {
+    	if (neighbors_vars.neighbors[i].used==1) {
+    		timeSinceHeard = ieee154e_asnDiff(&neighbors_vars.neighbors[i].asn);
+    		if (timeSinceHeard>DESYNCTIMEOUT) {
+    			haveParent = icmpv6rpl_getPreferredParentIndex(&j);
+    			if (haveParent && (i==j)) { // this is our preferred parent, carefully!
+    				icmpv6rpl_killPreferredParent();
+    				removeNeighbor(i);
+    				icmpv6rpl_updateMyDAGrankAndParentSelection();
+    			} else {
+    				removeNeighbor(i);
+    			}
+    		}
+    	}
+    }
+
     // neighbors marked as NO_RES will never removed.
     
     // first round
@@ -488,7 +508,7 @@ void  neighbors_removeOld() {
                 i!= neighborIndexWithLowestRank[2]
             ) {
                 haveParent = icmpv6rpl_getPreferredParentIndex(&j);
-                if (haveParent && (i==j)) { // this is our preferred parent, carefull!
+                if (haveParent && (i==j)) { // this is our preferred parent, carefully!
                     icmpv6rpl_killPreferredParent();
                     icmpv6rpl_updateMyDAGrankAndParentSelection();
                 }

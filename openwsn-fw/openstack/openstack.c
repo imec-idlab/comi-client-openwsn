@@ -34,7 +34,6 @@
 //-- 04-TRAN
 #include "opentcp.h"
 #include "openudp.h"
-#include "opencoap.h"
 //===== applications
 #include "openapps.h"
 
@@ -77,8 +76,7 @@ void openstack_init(void) {
    //-- 04-TRAN
    opentcp_init();
    openudp_init();
-   opencoap_init();     // initialize before any of the CoAP applications
-   
+   opencoap_init();
    //===== applications
    openapps_init();
    

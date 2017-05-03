@@ -161,6 +161,7 @@ typedef struct {
    uint8_t                   ParentIndex;             ///< index of Parent in neighbor table (iff haveParent==TRUE)
    // actually only here for debug
    icmpv6rpl_dio_ht*         incomingDio;             //keep it global to be able to debug correctly.
+   uint8_t         			 rplinstanceId;
 } icmpv6rpl_vars_t;
 
 //=========================== prototypes ======================================
@@ -182,6 +183,8 @@ void     icmpv6rpl_killPreferredParent(void);                            // new 
 void     icmpv6rpl_updateMyDAGrankAndParentSelection(void);              // new DB
 void     icmpv6rpl_indicateRxDIO(OpenQueueEntry_t* msg);                 // new DB
 
+//A_K
+icmpv6rpl_vars_t* get_icmpv6rpl_vars(void);
 
 /**
 \}

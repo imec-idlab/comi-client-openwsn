@@ -1,6 +1,5 @@
 #include "opendefs.h"
 #include "opencoap.h"
-#include "openudp.h"
 #include "openqueue.h"
 #include "openserial.h"
 #include "openrandom.h"
@@ -30,6 +29,12 @@ void opencoap_init() {
    
    // initialize the messageID
    opencoap_vars.messageID     = openrandom_get16b();
+
+   // register at UDP stack
+   opencoap_vars.desc.port              = WKP_UDP_COAP;
+   opencoap_vars.desc.callbackReceive   = &opencoap_receive;
+   opencoap_vars.desc.callbackSendDone  = opencoap_sendDone;
+   openudp_register(&opencoap_vars.desc);
 }
 
 /**
@@ -584,8 +589,6 @@ owerror_t opencoap_send(
 
 //=========================== private =========================================
 
-
-
 //=========================== A-K =========================================
 
 owerror_t opencoap_sendresponse(
@@ -620,3 +623,80 @@ owerror_t opencoap_sendresponse(
    return openudp_send(msg);
 }
 
+uint8_t getOptionPosition(coap_option_iht*  coap_options, coap_option_t optionCode) {
+
+	int i=0;
+	for (i=0;i<MAX_COAP_OPTIONS;i++) {
+		if( coap_options[i].type == optionCode){
+			break;
+		}
+	}
+	return i;
+}
+
+void processBlockWiseRequest(coap_option_iht*  coap_option, blockwise_var_t* blockwiseVar) {
+	blockwiseVar->isBlock=1;
+	if(coap_option[0].length == 3){
+		openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)1, (errorparameter_t)254);
+		return;
+	}
+	else if(coap_option[0].length == 2){
+		blockwiseVar->NUM= ((coap_option->pValue[0]<<8)& 0xff00) | ((coap_option->pValue[1] >> 4)& 0x000f);
+		blockwiseVar->M=((coap_option->pValue[1]>>3)& 0x01);
+		blockwiseVar->SZX=(coap_option->pValue[1])& 0x07;
+	}
+	else if(coap_option[0].length == 1){
+		blockwiseVar->NUM=((coap_option->pValue[0] >> 4)& 0x000f);
+		blockwiseVar->M=((coap_option->pValue[0]>>3)& 0x01);
+		blockwiseVar->SZX=(coap_option->pValue[0])& 0x07;
+	}
+	else if(coap_option[0].length == 0){
+		blockwiseVar->NUM=0;
+		blockwiseVar->M=0;
+		blockwiseVar->SZX=0;
+	}
+	else{
+		openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)1, (errorparameter_t)255);
+	}
+
+	return;
+}
+
+uint8_t calculateSZX(uint8_t blocksize) {
+
+	if(blocksize==16){
+		return 0;
+	}
+	else if(blocksize==32){
+		return 1;
+	}
+	else if(blocksize==64){
+		return 2;
+	}
+	else if(blocksize==128){
+		openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)3, (errorparameter_t)128);
+		return 3;
+	}
+	return 0;
+}
+
+void opencoap_addPayloadMarker(OpenQueueEntry_t* msg) {
+	packetfunctions_reserveHeaderSize(msg,1);
+	msg->payload[0]  = COAP_PAYLOAD_MARKER;
+   return;
+}
+
+void opencoap_addBlockWiseOption(OpenQueueEntry_t* msg, blockwise_var_t* blockwiseVar, coap_option_t last_option) {
+	if(blockwiseVar->NUM<16){
+		packetfunctions_reserveHeaderSize(msg,2);
+		msg->payload[0]     = ((COAP_OPTION_NUM_BLOCKWISE2 - last_option )<< 4) | 1;
+		msg->payload[1]     = (blockwiseVar->NUM<<4 & 0x00f0)  | (blockwiseVar->M<<3 & 0x0008)   | (blockwiseVar->SZX & 0x0007);
+	}
+	else{
+		packetfunctions_reserveHeaderSize(msg,3);
+		msg->payload[0]     = ((COAP_OPTION_NUM_BLOCKWISE2 - last_option) << 4) | 2;
+		msg->payload[1]     = (blockwiseVar->NUM>>8 & 0x00ff);
+		msg->payload[2]     = (blockwiseVar->NUM<<4 & 0x00f0)  | (blockwiseVar->M<<3 & 0x0008)   | (blockwiseVar->SZX & 0x0007);
+	}
+   return;
+}

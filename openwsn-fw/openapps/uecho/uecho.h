@@ -8,12 +8,16 @@
 \{
 */
 
+
+#include "openudp.h"
 //=========================== define ==========================================
 
 //=========================== typedef =========================================
 
 //=========================== variables =======================================
-
+typedef struct {
+   udp_resource_desc_t desc;  ///< resource descriptor for this module, used to register at UDP stack
+} uecho_vars_t;
 //=========================== prototypes ======================================
 
 void uecho_init(void);

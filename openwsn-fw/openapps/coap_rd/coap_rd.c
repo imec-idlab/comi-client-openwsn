@@ -19,22 +19,21 @@
 #endif
 
 static const 	uri_t URI_oma_rd[] = "rd";
-
+static const uint8_t ipAddr_rdserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
+                                        0x02, 0x0d, 0xb9, 0xff, 0xfe, 0x40, 0x31, 0x14};
 //=========================== variables =======================================
 
 coap_rd_server_t coap_rd_server;
-uint8_t ComponentID ;
 
 //=========================== prototypes ======================================
 
 
 //=========================== public ==========================================
 
-void coap_rd_init(uint8_t creator, uint8_t* ipAddr_rdserver, uint16_t period) {
+void coap_rd_init() {
    if(idmanager_getIsDAGroot()==TRUE) return; 
-   ComponentID=creator;
    memset(&coap_rd_server,0,sizeof(coap_rd_server_t));
-   memcpy(&coap_rd_server.ipv6address[0], ipAddr_rdserver, 16);
+   memcpy(&coap_rd_server.ipv6address[0], &ipAddr_rdserver, 16);
 
    coap_rd_server.desc.path0len   = sizeof(URI_oma_rd)-1;
    coap_rd_server.desc.path0val   = (uint8_t*)(&URI_oma_rd);
@@ -42,13 +41,39 @@ void coap_rd_init(uint8_t creator, uint8_t* ipAddr_rdserver, uint16_t period) {
    coap_rd_server.desc.path1val   = NULL;
    coap_rd_server.desc.path2len   = 0;
    coap_rd_server.desc.path2val   = NULL;
-   coap_rd_server.desc.componentID      = ComponentID;
+   coap_rd_server.desc.componentID      = COMPONENT_COAP_RD;
    coap_rd_server.desc.discoverable     = FALSE;
+   coap_rd_server.desc.callbackRx       = &coap_rd_receive;
+   coap_rd_server.desc.callbackSendDone = &coap_rd_sendDone;
+	opencoap_register(&coap_rd_server.desc);
 
-   coap_rd_server.period=period;
+
+   coap_rd_server.period=RDPERIOD;
    coap_rd_server.timerId   = opentimers_start(coap_rd_server.period,
                                                 TIMER_PERIODIC,TIME_MS,
 												coap_register_server_cb);
+}
+
+owerror_t coap_rd_receive(
+      OpenQueueEntry_t* msg,
+      coap_header_iht*  coap_header,
+      coap_option_iht*  coap_options
+   ) {
+
+   owerror_t            outcome;
+   switch (coap_header->Code) {
+
+   	   case COAP_CODE_RESP_CREATED:
+   		   opentimers_stop(coap_rd_server.timerId );
+
+           break;
+
+      default:
+         outcome = E_FAIL;
+         break;
+   }
+
+   return outcome;
 }
 
 //=========================== private =========================================
@@ -75,17 +100,17 @@ void coap_simple_register_rd() {
 
       uint8_t numOptions;
 
-      pkt = openqueue_getFreePacketBuffer(ComponentID);
+      pkt = openqueue_getFreePacketBuffer(COMPONENT_COAP_RD);
       if (pkt == NULL) {
-          openserial_printError(ComponentID,ERR_BUSY_SENDING,
+          openserial_printError(COMPONENT_COAP_RD,ERR_BUSY_SENDING,
                                 (errorparameter_t)0,
                                 (errorparameter_t)0);
           openqueue_freePacketBuffer(pkt);
           return;
       }
 
-      pkt->creator   = ComponentID;
-      pkt->owner      = ComponentID;
+      pkt->creator   = COMPONENT_COAP_RD;
+      pkt->owner      = COMPONENT_COAP_RD;
       pkt->l4_protocol  = IANA_UDP;
 
       numOptions=0;
@@ -133,6 +158,7 @@ void coap_simple_register_rd() {
       if (outcome == E_FAIL) {
         openqueue_freePacketBuffer(pkt);
       }
+
 }
 
 
@@ -143,42 +169,43 @@ void coap_long_register_rd() {
 
       uint8_t numOptions;
 
-      pkt = openqueue_getFreePacketBuffer(ComponentID);
+      pkt = openqueue_getFreePacketBuffer(COMPONENT_COAP_RD);
       if (pkt == NULL) {
-          openserial_printError(ComponentID,ERR_BUSY_SENDING,
+          openserial_printError(COMPONENT_COAP_RD,ERR_BUSY_SENDING,
                                 (errorparameter_t)0,
                                 (errorparameter_t)0);
           openqueue_freePacketBuffer(pkt);
           return;
       }
 
-      pkt->creator   = ComponentID;
-      pkt->owner      = ComponentID;
+      pkt->creator   = COMPONENT_COAP_RD;
+      pkt->owner      = COMPONENT_COAP_RD;
       pkt->l4_protocol  = IANA_UDP;
 
-      numOptions=0;
-	//      uint8_t lwm2mversion[] = "lwm2m=1.0";
-	      // query option
-	//      packetfunctions_reserveHeaderSize(pkt,sizeof(lwm2mversion)-1);
-	 //     memcpy(&pkt->payload[0],&lwm2mversion,sizeof(lwm2mversion)-1);
-	 //     packetfunctions_reserveHeaderSize(pkt,1);
-	 //     pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-	 //              ((sizeof(lwm2mversion))-1);
 
-	      uint8_t limetime[] = "lt=86400";
-	      // query option
-	      packetfunctions_reserveHeaderSize(pkt,sizeof(limetime)-1);
-	      memcpy(&pkt->payload[0],&limetime,sizeof(limetime)-1);
-	      packetfunctions_reserveHeaderSize(pkt,1);
-	     pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-	               ((sizeof(limetime))-1);
+      uint8_t myPayload[] = "</c>;rt=\"core.c\"";
+
+      openqueue_freePacketBuffer(pkt);
+      packetfunctions_reserveHeaderSize(pkt,sizeof(myPayload)-1);
+      memcpy(&pkt->payload[0],&myPayload,sizeof(myPayload)-1);
+
+      opencoap_addPayloadMarker(pkt);
+
+      numOptions=0;
+//      uint8_t limetime[] = "lt=86400";
+//      // query option
+//      packetfunctions_reserveHeaderSize(pkt,sizeof(limetime)-1);
+//      memcpy(&pkt->payload[0],&limetime,sizeof(limetime)-1);
+//      packetfunctions_reserveHeaderSize(pkt,1);
+//      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
+//    		  ((sizeof(limetime))-1);
 
       // query option
-      packetfunctions_reserveHeaderSize(pkt,sizeof(device_domain)-1);
-      memcpy(&pkt->payload[0],&device_domain,sizeof(device_domain)-1);
-      packetfunctions_reserveHeaderSize(pkt,1);
-      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
-               ((sizeof(device_domain))-1);
+//      packetfunctions_reserveHeaderSize(pkt,sizeof(device_domain)-1);
+//      memcpy(&pkt->payload[0],&device_domain,sizeof(device_domain)-1);
+//      packetfunctions_reserveHeaderSize(pkt,1);
+//      pkt->payload[0] = (COAP_OPTION_NUM_URIQUERY-COAP_OPTION_NUM_URIQUERY) << 4 |
+//               ((sizeof(device_domain))-1);
 
       // query option
       packetfunctions_reserveHeaderSize(pkt,sizeof(endpoint)-1);
@@ -205,12 +232,13 @@ void coap_long_register_rd() {
       pkt->l3_destinationAdd.type = ADDR_128B;
       // set destination address here
       memcpy(&pkt->l3_destinationAdd.addr_128b[0], &coap_rd_server.ipv6address[0], 16);
+
       //send
       outcome = opencoap_send(
               pkt,
               COAP_TYPE_CON,
 			  COAP_CODE_REQ_POST,
-			  numOptions,
+			  1,
               &(coap_rd_server.desc)
               );
 

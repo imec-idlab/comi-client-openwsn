@@ -16,22 +16,31 @@
 #include "scheduler.h"
 #include "schedule.h"
 #include "opentimers.h"
-
+#include "coap_rd.h"
 
 //=========================== defines =========================================
- uint8_t comi_path_celllist[COMI_PATH_SIZE];			// 4001
- uint8_t comi_path_neighborlist[COMI_PATH_SIZE];		// 4011
-//=========================== variables =======================================
 
+// URIs for available resources
+uint8_t comi_path_celllist[COMI_PATH_SIZE];			// 4001
+uint8_t comi_path_neighborlist[COMI_PATH_SIZE];		// 4011
+uint8_t comi_path_routingtable[COMI_PATH_SIZE];		// 4021
+
+//=========================== variables =======================================
 c6top_vars_t c6top_vars;
+
 //=========================== prototypes ======================================
 
-owerror_t comi_celllist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-owerror_t comi_neighborlist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
-
-
+// coap resource registration
 void comi_celllist_register(c6top_vars_t* c6top_vars);
 void comi_neighborlist_register(c6top_vars_t* c6top_vars);
+void comi_routingtable_register(c6top_vars_t* c6top_vars);
+
+// request and response reception for certain resources
+owerror_t comi_celllist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
+owerror_t comi_neighborlist_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
+owerror_t comi_routingtable_receive(OpenQueueEntry_t* msg, coap_header_iht*  coap_header, coap_option_iht*  coap_options);
+
+// neighbor observer functions
 void comi_send_neighbor_notification(void);
 void comi_neighbor_observer_cb(opentimer_id_t id);
 void c6top_register_observer(observer_t* neighbor_observer, OpenQueueEntry_t* msg, coap_header_iht*  coap_header);
@@ -48,6 +57,7 @@ void c6top_init() {
 	// retrieve the schedule table
 	comi_celllist_register(&c6top_vars);
 	comi_neighborlist_register(&c6top_vars);
+	comi_routingtable_register(&c6top_vars);
 }
 
 //=========================== private =========================================
@@ -103,6 +113,32 @@ void comi_neighborlist_register(
 	opencoap_register(&c6top_vars->comi_neighborlist.desc);
 }
 
+/**
+   \brief Register routing table resources into opencoap.
+ */
+void comi_routingtable_register(
+		c6top_vars_t* c6top_vars) {
+
+	c6top_vars->comi_routingtable.icmpv6rpl_vars=get_icmpv6rpl_vars();
+
+	uint8_t path1len;
+
+	// Register Routing Table
+	path1len=base64_encode(SID_comi_routingtable,&comi_path_routingtable[0]);
+	c6top_vars->comi_routingtable.desc.path0len   = sizeof(comi_path)-1;
+	c6top_vars->comi_routingtable.desc.path0val   = (uint8_t*)(&comi_path);
+	c6top_vars->comi_routingtable.desc.path1len   = path1len;
+	c6top_vars->comi_routingtable.desc.path1val   = &comi_path_routingtable[0];
+	c6top_vars->comi_routingtable.desc.path2len   = 0;
+	c6top_vars->comi_routingtable.desc.path2val   = NULL;
+	c6top_vars->comi_routingtable.desc.componentID      = COMPONENT_COMI;
+	c6top_vars->comi_routingtable.desc.discoverable     = TRUE;
+	c6top_vars->comi_routingtable.desc.callbackRx       = &comi_routingtable_receive;
+	c6top_vars->comi_routingtable.desc.callbackSendDone = &c6top_sendDone;
+	// register with the CoAP module
+	opencoap_register(&c6top_vars->comi_routingtable.desc);
+}
+
 //=========================== RECEIVE =========================================
 
 owerror_t comi_celllist_receive(
@@ -111,7 +147,11 @@ owerror_t comi_celllist_receive(
 		coap_option_iht*  coap_options
 ) {
 
-	owerror_t            outcome;
+	owerror_t           outcome;
+	uint8_t 			comi_payload[MAX_PAYLOAD_SIZE];
+	uint8_t 			comi_payload_length=0;
+	uint16_t 			maxActiveSlots = schedule_getMaxActiveSlots();
+	uint8_t 			posQuery =getOptionPosition(coap_options,COAP_OPTION_NUM_URIQUERY);
 
 	switch (coap_header->Code) {
 		case COAP_CODE_REQ_GET:
@@ -119,45 +159,113 @@ owerror_t comi_celllist_receive(
 			msg->payload                     = &(msg->packet[127]);
 			msg->length                      = 0;
 
-			uint8_t pos=0;
+			blockwise_var_t blockwiseVar;
+			blockwiseVar.blocksize = COAP_PREF_BLOCK_SIZE;
+			blockwiseVar.posBlock=getOptionPosition(coap_options,COAP_OPTION_NUM_BLOCKWISE2);
 
-			uint16_t maxActiveSlots=schedule_getMaxActiveSlots();
-			uint8_t comi_payload[MAX_PAYLOAD_SIZE];
+			//STEP 1: Check if the request is for available blocks or new resource reading
+			// Checking if the client has requested blockwise operation
+			if(blockwiseVar.posBlock<MAX_COAP_OPTIONS){
+				processBlockWiseRequest(&coap_options[blockwiseVar.posBlock], &blockwiseVar);
 
-			uint8_t key=0;
-			if (comi_getKey(&coap_options[2],&key)==1){
-					if(key<maxActiveSlots){
-						pos=pos+comi_serialize_cell(&comi_payload[pos],key);
-					}
-					else{
-						openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t)33, (errorparameter_t)33);
-					}
-			}else{
-				uint8_t i;
-				pos=1;
-				for(i=0;i<maxActiveSlots;i++){
-					if(c6top_vars.comi_celllist.schedule_vars->scheduleBuf[i].next==NULL || pos>=MAX_PAYLOAD_SIZE-1){
-						if(i>0){
-							comi_payload[0]= cbor_serialize_array(i);
+				if(blockwiseVar.NUM>0){	// already existing data is asked
+					uint8_t len=(16 << blockwiseVar.SZX);
+					uint8_t curser=(blockwiseVar.NUM<<(blockwiseVar.SZX+4));
+
+					if(curser<c6top_vars.coap_payload_cache.length){
+						if((c6top_vars.coap_payload_cache.length-curser)<=len){
+							len=(c6top_vars.coap_payload_cache.length-curser);
+							blockwiseVar.M=0;
 						}
-						i=maxActiveSlots;
+						else{
+							blockwiseVar.M=1;
+						}
+
+						packetfunctions_reserveHeaderSize(msg,len);
+						memcpy(&msg->payload[0],&c6top_vars.coap_payload_cache.cache[curser],len);
 					}
-					else{
-						pos=pos+comi_serialize_cell(&comi_payload[pos],i);
+
+					opencoap_addPayloadMarker(msg);
+					opencoap_addBlockWiseOption(msg,&blockwiseVar,COAP_OPTION_NUM_CONTENTFORMAT);
+
+					packetfunctions_reserveHeaderSize(msg,2);
+					msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
+					msg->payload[1]     = COAP_MEDTYPE_CBOR;
+
+					coap_header->Code                = COAP_CODE_RESP_CONTENT;
+					outcome = E_SUCCESS;
+					break;
+				}
+					// check if the client has asked for another block size
+					if(((0x0010 << blockwiseVar.SZX))<COAP_PREF_BLOCK_SIZE){
+						blockwiseVar.blocksize=(0x0010 << blockwiseVar.SZX);
 					}
+					blockwiseVar.SZX=calculateSZX(blockwiseVar.blocksize);
+			}
+
+			//STEP 2: Check for query, return values with corresponding key
+			if(posQuery<MAX_COAP_OPTIONS){
+				uint8_t key=0;
+				if (comi_getKey(&coap_options[posQuery],&key)==E_FAIL || key>=maxActiveSlots){
+					outcome = E_FAIL;
+					break;
+				}
+				comi_payload_length=comi_payload_length+comi_serialize_cell(&comi_payload[comi_payload_length],key);
+			}
+			else{
+				//No query
+				uint8_t i=0;
+				uint8_t numCell=0;
+				comi_payload_length=1;
+
+				while (i<maxActiveSlots) {
+
+					if(comi_payload_length>MAX_PAYLOAD_SIZE-1){
+						break;
+					}
+					else if(c6top_vars.comi_celllist.schedule_vars->scheduleBuf[i].type!=CELLTYPE_OFF){
+						comi_payload_length=comi_payload_length+comi_serialize_cell(&comi_payload[comi_payload_length],i);
+						numCell++;
+					}
+					i++;
+				}
+				if(numCell>0){
+					comi_payload[0]= cbor_serialize_array(numCell);
 				}
 			}
-			packetfunctions_reserveHeaderSize(msg,pos);
-			memcpy(&msg->payload[0],&comi_payload[0],pos);
 
-			packetfunctions_reserveHeaderSize(msg,1);
-			msg->payload[0]  = COAP_PAYLOAD_MARKER;
-				// add return option
+			if(comi_payload_length>=MAX_PAYLOAD_SIZE){
+				outcome = E_FAIL;
+				break;
+			}
+
+			// step 3 write into packet
+			if(comi_payload_length>=blockwiseVar.blocksize){
+					blockwiseVar.isBlock=1;
+					blockwiseVar.NUM=0;
+					blockwiseVar.SZX=calculateSZX(blockwiseVar.blocksize);
+					memcpy(&c6top_vars.coap_payload_cache.cache[0], &comi_payload[0],comi_payload_length);
+					c6top_vars.coap_payload_cache.length=comi_payload_length;
+					packetfunctions_reserveHeaderSize(msg,blockwiseVar.blocksize);
+					memcpy(&msg->payload[0],&comi_payload[0],blockwiseVar.blocksize);
+					blockwiseVar.M=1;
+			}
+			else{
+				packetfunctions_reserveHeaderSize(msg,comi_payload_length);
+				memcpy(&msg->payload[0],&comi_payload[0],comi_payload_length);
+				if(blockwiseVar.isBlock){
+					blockwiseVar.M=0;
+				}
+			}
+
+			opencoap_addPayloadMarker(msg);
+			opencoap_addBlockWiseOption(msg,&blockwiseVar,COAP_OPTION_NUM_CONTENTFORMAT);
+
 			packetfunctions_reserveHeaderSize(msg,2);
 			msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
 			msg->payload[1]     = COAP_MEDTYPE_CBOR;
 
-				// set the CoAP header
+			// set the CoAP header
 			coap_header->Code                = COAP_CODE_RESP_CONTENT;
 			outcome                          = E_SUCCESS;
 
@@ -165,24 +273,52 @@ owerror_t comi_celllist_receive(
 
 		case COAP_CODE_REQ_POST:
 
-
-			// reset packet payload
-	          msg->payload                  = &(msg->packet[127]);
-	          msg->length                   = 0;
-			if( 1 ){
+			if(posQuery<MAX_COAP_OPTIONS){
+				uint8_t key=0;
+				if (comi_getKey(&coap_options[posQuery],&key)==E_FAIL || key>=maxActiveSlots){
+					outcome = E_FAIL;
+					break;
+				}
 
 				//schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset, cellType_t type, bool shared,channelOffset_t channelOffset,open_addr_t* neighbor);
 
-	          // set the CoAP header
-		          coap_header->Code             = COAP_CODE_RESP_CREATED;
-		          outcome                       = E_SUCCESS;
+				if(schedule_addActiveSlotByID(key,9,15,CELLTYPE_TX,FALSE,&c6top_vars.comi_neighborlist.neighbors_vars->neighbors[0].addr_64b)==E_SUCCESS){
+					// set the CoAP header
+					coap_header->Code             = COAP_CODE_RESP_CREATED;
+					outcome                       = E_SUCCESS;
+				}
+				else{
+					coap_header->Code             = COAP_CODE_RESP_NOTFOUND;
+					outcome                       = E_FAIL;
+				}
 			}
 			else{
-			// set the CoAP header
-	          coap_header->Code                = COAP_CODE_RESP_CONFLICT;
-	          outcome                          = E_FAIL;
+				outcome                       = E_FAIL;
 			}
+			break;
 
+		case COAP_CODE_REQ_DELETE:
+
+			if(posQuery<MAX_COAP_OPTIONS){
+				uint8_t key=0;
+				if (comi_getKey(&coap_options[posQuery],&key)==E_FAIL || key>=maxActiveSlots){
+					outcome = E_FAIL;
+					break;
+				}
+
+				if(schedule_removeActiveSlotByID(key)==E_SUCCESS){
+					// set the CoAP header
+					coap_header->Code             = COAP_CODE_RESP_DELETED;
+					outcome                       = E_SUCCESS;
+				}
+				else{
+					coap_header->Code             = COAP_CODE_RESP_NOTFOUND;
+					outcome                       = E_FAIL;
+				}
+
+				break;
+			}
+			outcome = E_FAIL;
 			break;
 		default:
 			outcome = E_FAIL;
@@ -227,11 +363,8 @@ owerror_t comi_neighborlist_receive(
 				packetfunctions_reserveHeaderSize(msg,pos);
 				memcpy(&msg->payload[0],&comi_payload[0],pos);
 
-				packetfunctions_reserveHeaderSize(msg,1);
-				msg->payload[0]  = COAP_PAYLOAD_MARKER;
+				opencoap_addPayloadMarker(msg);
 
-
-				// add return option
 				if (coap_options[0].type == COAP_OPTION_NUM_OBSERVE) {
 
 					if(coap_options[0].length==0){
@@ -271,7 +404,6 @@ owerror_t comi_neighborlist_receive(
 				outcome                          = E_SUCCESS;
 				break;
 
-
 		default:
 			outcome = E_FAIL;
 			break;
@@ -280,7 +412,64 @@ owerror_t comi_neighborlist_receive(
 	return outcome;
 }
 
+owerror_t comi_routingtable_receive(
+		OpenQueueEntry_t* msg,
+		coap_header_iht*  coap_header,
+		coap_option_iht*  coap_options
+) {
 
+	owerror_t            outcome;
+	uint8_t 			comi_payload[MAX_PAYLOAD_SIZE];
+	uint8_t 			comi_payload_length=0;
+	uint8_t 			posQuery =getOptionPosition(coap_options,COAP_OPTION_NUM_URIQUERY);
+
+
+	switch (coap_header->Code) {
+		case COAP_CODE_REQ_GET:
+
+			// reset packet payload
+			msg->payload                     = &(msg->packet[127]);
+			msg->length                      = 0;
+
+			//STEP 2: Check for query, return values with corresponding key
+			if(posQuery<MAX_COAP_OPTIONS){
+				uint8_t key=0;
+				if (comi_getKey(&coap_options[posQuery],&key)==E_FAIL || key>0){ // todo change 0 with max route number
+					outcome = E_FAIL;
+					break;
+				}
+					comi_payload_length=comi_payload_length+comi_serialize_route(&comi_payload[comi_payload_length],key);
+			}
+			else{
+				uint8_t i;
+				for(i=0;i<1;i++){
+					comi_payload_length=comi_payload_length+comi_serialize_route(&comi_payload[comi_payload_length],i);
+				}
+			}
+
+			packetfunctions_reserveHeaderSize(msg,comi_payload_length);
+			memcpy(&msg->payload[0],&comi_payload[0],comi_payload_length);
+
+			opencoap_addPayloadMarker(msg);
+
+			packetfunctions_reserveHeaderSize(msg,2);
+			msg->payload[0]     = COAP_OPTION_NUM_CONTENTFORMAT << 4 | 1;
+			msg->payload[1]     = COAP_MEDTYPE_CBOR;
+
+
+			// set the CoAP header
+			coap_header->Code                = COAP_CODE_RESP_CONTENT;
+			outcome = E_SUCCESS;
+		break;
+
+
+		default:
+			outcome = E_FAIL;
+			break;
+	}
+
+	return outcome;
+}
 
 /* serialize cell with cellid */
 uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
@@ -324,9 +513,8 @@ uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
 	uint8_t stats=(uint8_t)(100*c6top_vars.comi_celllist.schedule_vars->scheduleBuf[cell_id].numTxACK/c6top_vars.comi_celllist.schedule_vars->scheduleBuf[cell_id].numTx);
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size],stats );
 
-	// write last byte of last asn
-	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_lastasn-SID_comi_celllist);
-	size = size + cbor_serialize_byte(&comi_payload_curser[size],&c6top_vars.comi_celllist.schedule_vars->scheduleBuf[cell_id].lastUsedAsn.byte4,1);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_diffasn-SID_comi_celllist);
+	size = size + cbor_serialize_uint16(&comi_payload_curser[size], c6top_vars.comi_celllist.schedule_vars->currentScheduleEntry->lastUsedAsn.bytes0and1-c6top_vars.comi_celllist.schedule_vars->scheduleBuf[cell_id].lastUsedAsn.bytes0and1);
 	return size;
 }
 
@@ -335,8 +523,12 @@ uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_i
 {
 	uint8_t size=0;
 
-	comi_payload_curser[size] = cbor_serialize_map(0x04);
+	comi_payload_curser[size] = cbor_serialize_map(0x05);
 	size++;
+
+	// write neighborid
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_neighborid-SID_comi_neighborlist);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], neighbor_id);
 
 	// write last byte of neighboraddress
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_neighborAddr-SID_comi_neighborlist);
@@ -352,9 +544,42 @@ uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_i
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size],stats );
 
 	// write asn
-	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_asn-SID_comi_neighborlist);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_neigh_diffasn-SID_comi_neighborlist);
 	size = size + cbor_serialize_uint16(&comi_payload_curser[size], c6top_vars.comi_celllist.schedule_vars->currentScheduleEntry->lastUsedAsn.bytes0and1-c6top_vars.comi_neighborlist.neighbors_vars->neighbors[neighbor_id].asn.bytes0and1);
 
+
+	return size;
+}
+
+
+/* serialize route with route id */
+uint8_t comi_serialize_route(uint8_t* comi_payload_curser, uint8_t route_id)
+{
+	uint8_t size=0;
+
+	comi_payload_curser[size] = cbor_serialize_map(0x05);
+	size++;
+
+	// write neighborid
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_routeid-SID_comi_routingtable);
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], route_id);
+
+	// write last byte of parentaddress
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_parentaddr-SID_comi_routingtable);
+	size = size + cbor_serialize_byte(&comi_payload_curser[size], &c6top_vars.comi_neighborlist.neighbors_vars->neighbors[c6top_vars.comi_routingtable.icmpv6rpl_vars->ParentIndex].addr_64b.addr_64b[7],1);
+
+	// write dagrank
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_dagrank-SID_comi_routingtable);
+	size = size + cbor_serialize_uint16(&comi_payload_curser[size], c6top_vars.comi_routingtable.icmpv6rpl_vars->myDAGrank);
+
+	// write rankincrease
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_rankrincrease-SID_comi_routingtable);
+	size = size + cbor_serialize_uint16(&comi_payload_curser[size],c6top_vars.comi_routingtable.icmpv6rpl_vars->rankIncrease);
+
+	// write route options
+	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_routeoptions-SID_comi_routingtable);
+	uint8_t options=0x00;
+	size = size + cbor_serialize_byte(&comi_payload_curser[size], &options,1);
 
 	return size;
 }
@@ -406,7 +631,7 @@ void comi_send_neighbor_notification() {
 	   owerror_t outcome;
 	   pkt = openqueue_getFreePacketBuffer(COMPONENT_LWM2M);
 	   if (pkt == NULL) {
-		   openserial_printError(COMPONENT_LWM2M,ERR_BUSY_SENDING,
+		   openserial_printError(COMPONENT_COMI,ERR_BUSY_SENDING,
 				   (errorparameter_t)0,
 				   (errorparameter_t)0);
 		   openqueue_freePacketBuffer(pkt);
@@ -438,9 +663,7 @@ void comi_send_neighbor_notification() {
 	      packetfunctions_reserveHeaderSize(pkt,pos);
 	      memcpy(&pkt->payload[0],&comi_payload[0],pos);
 
-	      packetfunctions_reserveHeaderSize(pkt,1);
-	      pkt->payload[0]  = COAP_PAYLOAD_MARKER;
-
+	      opencoap_addPayloadMarker(pkt);
 
 	      packetfunctions_reserveHeaderSize(pkt,2);
 	      pkt->payload[0]     = (COAP_OPTION_NUM_CONTENTFORMAT-COAP_OPTION_NUM_OBSERVE) << 4 | 1;
@@ -510,5 +733,3 @@ void c6top_deregister_observer(observer_t* neighbor_observer){
 void c6top_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
 	openqueue_freePacketBuffer(msg);
 }
-
-

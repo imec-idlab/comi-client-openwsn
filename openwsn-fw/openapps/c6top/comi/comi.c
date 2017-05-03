@@ -93,14 +93,14 @@ owerror_t comi_receive(
 	return outcome;
 }
 
-uint8_t comi_getKey(coap_option_iht* coap_option, uint8_t* id) {
+owerror_t comi_getKey(coap_option_iht* coap_option, uint8_t* id) {
 
-	if (coap_option[0].type == COAP_OPTION_NUM_URIQUERY && (coap_option[0].length>sizeof(querypref)-1) && (memcmp(&coap_option[0].pValue[0],&querypref,sizeof(querypref)-1)==0) ) {
+	if ((coap_option[0].length>sizeof(querypref)-1) && (memcmp(&coap_option[0].pValue[0],&querypref,sizeof(querypref)-1)==0) ) {
 			*id =str2uint8((char*)&coap_option[0].pValue[2],coap_option[0].length-2);
-			return 1;
+			return E_SUCCESS;
 	}
 
-	return 0;
+	return E_FAIL;
 }
 
 uint8_t str2uint8 (const char* str, uint8_t len)

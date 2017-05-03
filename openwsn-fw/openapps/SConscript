@@ -35,10 +35,10 @@ defaultAppsInit   = [
    # 'cleds',
     'cwellknown',
     'c6top',
+    'coap_rd',
    # 'lwm2m',
    # 'lwm2m_dev',
    # 'techo',
-   # 'uecho',
    # 'rrt',
 ]
 

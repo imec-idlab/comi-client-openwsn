@@ -21,7 +21,6 @@ module ietf-6top {
          higher 6-octets should be filled with 0, and lowest 2-octets 
          is neighbor short address";
    }
-	}
    
    list CellList {
          key "CellID";

@@ -26,7 +26,7 @@ The superframe repears over time and can be arbitrarly long.
 #define SCHEDULE_MINIMAL_6TISCH_DEFAULT_SLOTFRAME_HANDLE          1 //id of slotframe
 #define SCHEDULE_MINIMAL_6TISCH_DEFAULT_SLOTFRAME_NUMBER          1 //1 slotframe by default.
 
-#define NUMSERIALRX          2
+#define NUMSERIALRX          3
 
 /*
   NUMSLOTSOFF is the max number of cells that the mote can add into schedule, 
@@ -184,7 +184,7 @@ void              schedule_removeAllCells(
 );
 scheduleEntry_t*  schedule_getCurrentScheduleEntry(void);
 uint8_t           schedule_getNumOfSlotsByType(cellType_t type);
-uint8_t           schedule_getNumberOfFreeEntries();
+uint8_t           schedule_getNumberOfFreeEntries(void);
 // from IEEE802154E
 void               schedule_syncSlotOffset(slotOffset_t targetSlotOffset);
 void               schedule_advanceSlot(void);
@@ -203,10 +203,10 @@ void               schedule_indicateTx(
                         bool      succesfullTx
                    );
 
-void               schedule_housekeeping();
+void               schedule_housekeeping(void);
 void		       schedule_remove_allTXandRX_Cells(void);
 owerror_t 		   schedule_removeActiveSlotByID(uint8_t cellID);
-owerror_t 			schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset, cellType_t type, bool shared,channelOffset_t channelOffset,open_addr_t* neighbor);
+owerror_t 			schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset,channelOffset_t channelOffset, cellType_t type, bool shared,open_addr_t* neighbor);
 schedule_vars_t* 	schedule_getSchedule_Vars(void);
 /**
 \}

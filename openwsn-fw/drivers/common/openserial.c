@@ -323,52 +323,53 @@ void openserial_startOutput() {
     openserial_vars.debugPrintCounter = (openserial_vars.debugPrintCounter+1)%STATUS_MAX;
     debugPrintCounter = openserial_vars.debugPrintCounter;
     ENABLE_INTERRUPTS();
-    
+
     switch (debugPrintCounter) {
         case STATUS_ISSYNC:
-            if (debugPrint_isSync()==TRUE) {
+       //     if (debugPrint_isSync()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_ID:
-            if (debugPrint_id()==TRUE) {
-               break;
-            }
+        //	if(){				// to send status_id once
+				debugPrint_id();
+        //	}
+        		break;
         case STATUS_DAGRANK:
-            if (debugPrint_myDAGrank()==TRUE) {
+        //    if (debugPrint_myDAGrank()==TRUE) {
                 break;
-            }
+        //    }
         case STATUS_OUTBUFFERINDEXES:
-            if (debugPrint_outBufferIndexes()==TRUE) {
+       //     if (debugPrint_outBufferIndexes()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_ASN:
-            if (debugPrint_asn()==TRUE) {
+       //     if (debugPrint_asn()==TRUE) {
                 break;
-            }
+        //    }
         case STATUS_MACSTATS:
-            if (debugPrint_macStats()==TRUE) {
+       //     if (debugPrint_macStats()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_SCHEDULE:
-            if(debugPrint_schedule()==TRUE) {
+      //      if(debugPrint_schedule()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_BACKOFF:
-            if(debugPrint_backoff()==TRUE) {
+      //      if(debugPrint_backoff()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_QUEUE:
-            if(debugPrint_queue()==TRUE) {
+       //     if(debugPrint_queue()==TRUE) {
                 break;
-            }
+       //     }
         case STATUS_NEIGHBORS:
-            if (debugPrint_neighbors()==TRUE) {
+      //      if (debugPrint_neighbors()==TRUE) {
                 break;
-            }
+      //      }
         case STATUS_KAPERIOD:
-            if (debugPrint_kaPeriod()==TRUE) {
+      //      if (debugPrint_kaPeriod()==TRUE) {
                 break;
-            }
+       //     }
         default:
             DISABLE_INTERRUPTS();
             openserial_vars.debugPrintCounter=0;

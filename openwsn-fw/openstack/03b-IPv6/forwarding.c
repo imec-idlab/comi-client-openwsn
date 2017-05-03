@@ -408,7 +408,6 @@ owerror_t forwarding_send_internal_RoutingTable(
       uint32_t*              flow_label,
       uint8_t                fw_SendOrfw_Rcv
    ) {
-   
    // retrieve the next hop from the routing table
    forwarding_getNextHop(&(msg->l3_destinationAdd),&(msg->l2_nextORpreviousHop));
    if (msg->l2_nextORpreviousHop.type==ADDR_NONE) {
@@ -420,7 +419,6 @@ owerror_t forwarding_send_internal_RoutingTable(
       );
       return E_FAIL;
    }
-   
    if (ipv6_outer_header->src.type != ADDR_NONE){
       packetfunctions_tossHeader(msg,ipv6_outer_header->header_length);
    }

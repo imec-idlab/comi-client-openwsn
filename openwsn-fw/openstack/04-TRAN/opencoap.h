@@ -9,6 +9,7 @@
 */
 
 #include "opentimers.h"
+#include "openudp.h"
 
 //=========================== define ==========================================
 
@@ -93,6 +94,8 @@ typedef enum {
    COAP_OPTION_NUM_URIQUERY            = 15,
    COAP_OPTION_NUM_ACCEPT              = 16,
    COAP_OPTION_NUM_LOCATIONQUERY       = 20,
+   COAP_OPTION_NUM_BLOCKWISE2	       = 23,
+   COAP_OPTION_NUM_BLOCKWISE1          = 27,
    COAP_OPTION_NUM_PROXYURI            = 35,
    COAP_OPTION_NUM_PROXYSCHEME         = 39,
 } coap_option_t;
@@ -109,6 +112,14 @@ typedef enum {
 
 
 //=========================== typedef =========================================
+typedef struct {
+	uint8_t blocksize;
+	uint8_t posBlock;
+	uint8_t isBlock;
+	uint16_t NUM;
+	uint8_t M;
+	uint8_t SZX;
+} blockwise_var_t;
 
 typedef struct {
    uint8_t       Ver;
@@ -124,15 +135,6 @@ typedef struct {
    uint8_t       length;
    uint8_t*      pValue;
 } coap_option_iht;
-
-typedef struct {
-   uint8_t       TKL;
-   uint8_t       token[COAP_MAX_TKL];
-   open_addr_t   observer_Address;
-   uint16_t   	 observer_port;
-   uint16_t   	 optionID;
-   opentimer_id_t observe_Neighbor_Timer_Id;
-} coap_observer_t;
 
 typedef owerror_t (*callbackRx_cbt)(OpenQueueEntry_t* msg,
                                 coap_header_iht*  coap_header,
@@ -159,6 +161,7 @@ struct coap_resource_desc_t {
 
 //=========================== module variables ================================
 typedef struct {
+   udp_resource_desc_t   desc;
    coap_resource_desc_t* resources;
    bool                  busySending;
    uint8_t               delayCounter;
@@ -185,6 +188,12 @@ owerror_t     opencoap_send(
 );
 
 
+// A-K
+uint8_t getOptionPosition(coap_option_iht*  coap_options, coap_option_t optionCode);
+void processBlockWiseRequest(coap_option_iht*  coap_option, blockwise_var_t* blockwiseVar);
+void opencoap_addPayloadMarker(OpenQueueEntry_t* msg);
+void opencoap_addBlockWiseOption(OpenQueueEntry_t* msg, blockwise_var_t* blockwiseVar, coap_option_t last_option);
+uint8_t calculateSZX(uint8_t blocksize);
 /**
 \}
 \}

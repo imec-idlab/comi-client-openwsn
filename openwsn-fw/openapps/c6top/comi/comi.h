@@ -46,7 +46,7 @@ typedef struct {
 //=========================== prototypes ======================================
 
 void comi_init(void);
-uint8_t comi_getKey(coap_option_iht* coap_option, uint8_t* id);
+owerror_t comi_getKey(coap_option_iht* coap_option, uint8_t* id);
 uint8_t str2uint8 (const char* str, uint8_t len);
 /**
 \}

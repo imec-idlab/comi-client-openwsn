@@ -19,6 +19,8 @@
 
 //===== interrupt state
 
+#define SLOTDURATION_10MS 			1
+
 #define INTERRUPT_DECLARATION()
 #define DISABLE_INTERRUPTS() IntMasterDisable()
 
