@@ -114,7 +114,7 @@ typedef enum {
 //=========================== typedef =========================================
 typedef struct {
 	uint8_t blocksize; // blocksize
-	uint8_t posBlock;
+	uint8_t posBlock;	//posBlock
 	uint8_t isBlock;
 	uint16_t NUM;
 	uint8_t M;
