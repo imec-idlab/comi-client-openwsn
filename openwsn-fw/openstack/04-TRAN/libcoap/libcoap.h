@@ -18,7 +18,7 @@
  *
  * The CONTIKI variable is within the Contiki build environment! */
 
-#if !defined (CONTIKI) 
+#if !defined (OPENWSN_VERSION_MAJOR)
 #include <netinet/in.h>
 #include <sys/socket.h>
 #endif /* CONTIKI */

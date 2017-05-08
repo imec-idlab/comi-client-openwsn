@@ -21,75 +21,24 @@
 #include <sys/types.h>
 #include "libcoap.h"
 
-#ifdef WITH_LWIP
-#include <lwip/ip_addr.h>
+
+#include "opendefs.h"
 
 typedef struct coap_address_t {
-  uint16_t port;
-  ip_addr_t addr;
+	open_addr_t addr;
+	unsigned short port;
 } coap_address_t;
 
-#define _coap_address_equals_impl(A, B)   (!!ip_addr_cmp(&(A)->addr,&(B)->addr))
-
-#define _coap_address_isany_impl(A)  ip_addr_isany(&(A)->addr)
-
-#define _coap_is_mcast_impl(Address) ip_addr_ismulticast(&(Address)->addr)
-#endif /* WITH_LWIP */
-
-#ifdef WITH_CONTIKI
-#include "uip.h"
-
-typedef struct coap_address_t {
-  uip_ipaddr_t addr;
-  unsigned short port;
-} coap_address_t;
+#define ipaddr_cmp(addr1, addr2) (memcmp(addr1, addr2, sizeof(open_addr_t)) == 0)
 
 #define _coap_address_equals_impl(A,B) \
         ((A)->port == (B)->port        \
-        && uip_ipaddr_cmp(&((A)->addr),&((B)->addr)))
+        && ipaddr_cmp(&((A)->addr),&((B)->addr)))
 
-/** @todo implementation of _coap_address_isany_impl() for Contiki */
 #define _coap_address_isany_impl(A)  0
 
-#define _coap_is_mcast_impl(Address) uip_is_addr_mcast(&((Address)->addr))
-#endif /* WITH_CONTIKI */
+//#define _coap_is_mcast_impl(Address) uip_is_addr_mcast(&((Address)->addr))
 
-#ifdef WITH_POSIX
-/** multi-purpose address abstraction */
-typedef struct coap_address_t {
-  socklen_t size;           /**< size of addr */
-  union {
-    struct sockaddr         sa;
-    struct sockaddr_storage st;
-    struct sockaddr_in      sin;
-    struct sockaddr_in6     sin6;
-  } addr;
-} coap_address_t;
-
-/**
- * Compares given address objects @p a and @p b. This function returns @c 1 if
- * addresses are equal, @c 0 otherwise. The parameters @p a and @p b must not be
- * @c NULL;
- */
-int coap_address_equals(const coap_address_t *a, const coap_address_t *b);
-
-static inline int
-_coap_address_isany_impl(const coap_address_t *a) {
-  /* need to compare only relevant parts of sockaddr_in6 */
-  switch (a->addr.sa.sa_family) {
-  case AF_INET:
-    return a->addr.sin.sin_addr.s_addr == INADDR_ANY;
-  case AF_INET6:
-    return memcmp(&in6addr_any,
-                  &a->addr.sin6.sin6_addr,
-                  sizeof(in6addr_any)) == 0;
-  default:
-    ;
-  }
-
-  return 0;
-}
-#endif /* WITH_POSIX */
 
 /**
  * Resets the given coap_address_t object @p addr to its default values. In
@@ -145,7 +94,7 @@ int coap_is_mcast(const coap_address_t *a);
  */
 static inline int
 coap_is_mcast(const coap_address_t *a) {
-  return a && _coap_is_mcast_impl(a);
+  return 0;//a && _coap_is_mcast_impl(a);
 }
 #endif /* WITH_POSIX */
 

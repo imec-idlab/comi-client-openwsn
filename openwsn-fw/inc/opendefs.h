@@ -17,6 +17,7 @@
 #include "toolchain_defs.h"
 #include "board_info.h"
 
+
 //=========================== define ==========================================
 
 
@@ -160,6 +161,7 @@ enum {
    COMPONENT_OPENTCP                   = 0x17,
    COMPONENT_OPENUDP                   = 0x18,
    COMPONENT_OPENCOAP                  = 0x19,
+   COMPONENT_LIBCOAP				   = 0x19,
    // applications
    COMPONENT_C6T                       = 0x1a,
    COMPONENT_CEXAMPLE                  = 0x1b,

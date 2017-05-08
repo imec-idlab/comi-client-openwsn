@@ -39,7 +39,7 @@ struct coap_context_t;
  * tuple (handle, addr) must uniquely identify this endpoint.
  */
 typedef struct coap_endpoint_t {
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI)
+#if defined(WITH_POSIX) || defined(WITH_CONTIKI)|| defined(WITH_OPENWSN)
   union {
     coap_socket_t fd; /**< on POSIX, Contiki and Windows systems */
     void *conn;       /**< opaque connection (e.g. uip_conn in Contiki) */

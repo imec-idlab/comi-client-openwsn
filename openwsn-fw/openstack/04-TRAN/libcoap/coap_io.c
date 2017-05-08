@@ -33,42 +33,14 @@
 # include "uip.h"
 #endif
 
+#ifdef WITH_OPENWSN
+# include "opendefs.h"
+#endif
+
 #include "debug.h"
 #include "mem.h"
 #include "coap_io.h"
 
-#ifdef WITH_POSIX
-/* define generic PKTINFO for IPv4 */
-#if defined(IP_PKTINFO)
-#  define GEN_IP_PKTINFO IP_PKTINFO
-#elif defined(IP_RECVDSTADDR)
-#  define GEN_IP_PKTINFO IP_RECVDSTADDR
-#else
-#  error "Need IP_PKTINFO or IP_RECVDSTADDR to request ancillary data from OS."
-#endif /* IP_PKTINFO */
-
-/* define generic KTINFO for IPv6 */
-#ifdef IPV6_RECVPKTINFO
-#  define GEN_IPV6_PKTINFO IPV6_RECVPKTINFO
-#elif defined(IPV6_PKTINFO)
-#  define GEN_IPV6_PKTINFO IPV6_PKTINFO
-#else
-#  error "Need IPV6_PKTINFO or IPV6_RECVPKTINFO to request ancillary data from OS."
-#endif /* IPV6_RECVPKTINFO */
-
-struct coap_packet_t {
-  coap_if_handle_t hnd;	      /**< the interface handle */
-  coap_address_t src;	      /**< the packet's source address */
-  coap_address_t dst;	      /**< the packet's destination address */
-  const coap_endpoint_t *interface;
-
-  int ifindex;
-  void *session;		/**< opaque session data */
-
-  size_t length;		/**< length of payload */
-  unsigned char payload[];	/**< payload */
-};
-#endif
 
 #ifndef CUSTOM_COAP_NETWORK_ENDPOINT
 
@@ -122,8 +94,60 @@ coap_free_endpoint(coap_endpoint_t *ep) {
     coap_free_contiki_endpoint(ep);
   }
 }
+#elif WITH_OPENWSN
+static int ep_initialized = 0;
 
-#else /* WITH_CONTIKI */
+static inline struct coap_endpoint_t *
+coap_malloc_openwsn_endpoint() {
+  static struct coap_endpoint_t ep;
+
+  if (ep_initialized) {
+    return NULL;
+  } else {
+    ep_initialized = 1;
+    return &ep;
+  }
+}
+
+static inline void
+coap_free_openwsn_endpoint(struct coap_endpoint_t *ep) {
+  ep_initialized = 0;
+}
+
+coap_endpoint_t *
+coap_new_endpoint(const coap_address_t *addr, int flags) {
+  struct coap_endpoint_t *ep = coap_malloc_openwsn_endpoint();
+
+  if (ep) {
+    memset(ep, 0, sizeof(struct coap_endpoint_t));
+    ep->handle.conn = udp_new(NULL, 0, NULL);
+
+    if (!ep->handle.conn) {
+      coap_free_endpoint(ep);
+      return NULL;
+    }
+
+    coap_address_init(&ep->addr);
+    uip_ipaddr_copy(&ep->addr.addr, &addr->addr);
+    ep->addr.port = addr->port;
+    udp_bind((struct uip_udp_conn *)ep->handle.conn, addr->port);
+  }
+  return ep;
+}
+
+void
+coap_free_endpoint(coap_endpoint_t *ep) {
+  if (ep) {
+    if (ep->handle.conn) {
+      uip_udp_remove((struct uip_udp_conn *)ep->handle.conn);
+    }
+    coap_free_openwsn_endpoint(ep);
+  }
+}
+
+
+#else
+
 static inline struct coap_endpoint_t *
 coap_malloc_posix_endpoint(void) {
   return (struct coap_endpoint_t *)coap_malloc(sizeof(struct coap_endpoint_t));
