@@ -13,6 +13,11 @@
 
 //=========================== define ==========================================
 
+#define MAX_COAP_PAYLOAD_SIZE 				256
+
+#define COAP_PREF_BLOCK_SIZE            32
+
+
 // IPv6 addresses of servers on the Internet
 static const uint8_t ipAddr_ipsoRD[]    = {0x26, 0x07, 0xf7, 0x40, 0x00, 0x00, 0x00, 0x3f, \
                                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x29};

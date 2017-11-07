@@ -19,7 +19,7 @@ int mote_main(void) {
    openstack_init();
    
    // indicate
-   
+
    // start
    scheduler_start();
    return 0; // this line should never be reached

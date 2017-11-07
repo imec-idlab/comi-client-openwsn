@@ -22,9 +22,12 @@
 
 void debugpins_init(void);
 
-void debugpins_frame_toggle(void);
-void debugpins_frame_clr(void);
-void debugpins_frame_set(void);
+//void debugpins_frame_toggle(void);
+//void debugpins_frame_clr(void);
+//void debugpins_frame_set(void);
+
+#define REMOTE_FIRE_REGISTER_INT(ptr) fire_int_callback = ptr;
+extern void (*fire_int_callback)(uint8_t value);
 
 void debugpins_slot_toggle(void);
 void debugpins_slot_clr(void);
@@ -45,6 +48,7 @@ void debugpins_isr_set(void);
 void debugpins_radio_toggle(void);
 void debugpins_radio_clr(void);
 void debugpins_radio_set(void);
+
 
 #ifdef OPENSIM
 void debugpins_ka_clr(void);

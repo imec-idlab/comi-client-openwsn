@@ -8,7 +8,7 @@
 
 //=========================== variables =======================================
 
-static neighbors_vars_t neighbors_vars;
+neighbors_vars_t neighbors_vars;
 
 //=========================== prototypes ======================================
 
@@ -301,12 +301,12 @@ void neighbors_indicateTx(open_addr_t* l2_dest,
    if (packetfunctions_isBroadcastMulticast(l2_dest)==TRUE) {
       return;
    }
-   
+
    // loop through neighbor table
    for (i=0;i<MAXNUMNEIGHBORS;i++) {
       if (isThisRowMatching(l2_dest,i)) {
          // handle roll-over case
-        
+
           if (neighbors_vars.neighbors[i].numTx>(0xff-numTxAttempts)) {
               neighbors_vars.neighbors[i].numWraps++; //counting the number of times that tx wraps.
               neighbors_vars.neighbors[i].numTx/=2;
@@ -314,7 +314,7 @@ void neighbors_indicateTx(open_addr_t* l2_dest,
            }
          // update statistics
         neighbors_vars.neighbors[i].numTx += numTxAttempts; 
-        
+
         if (was_finally_acked==TRUE) {
             neighbors_vars.neighbors[i].numTxACK++;
             memcpy(&neighbors_vars.neighbors[i].asn,asnTs,sizeof(asn_t));
@@ -641,3 +641,19 @@ bool isThisRowMatching(open_addr_t* address, uint8_t rowNumber) {
 neighbors_vars_t* schedule_getNeighbor_Vars(){
     return &neighbors_vars;
 }
+
+bool getNeighborAddressFromLastByte(open_addr_t* neighbor,uint8_t neighborLastByte){
+	uint8_t i=0;
+	while(i<MAXNUMNEIGHBORS){
+	      if (neighbors_vars.neighbors[i].used==TRUE && neighbors_vars.neighbors[i].addr_64b.addr_64b[7] == neighborLastByte) {
+			  break;
+	      }
+		i++;
+	}
+	if (i==MAXNUMNEIGHBORS) {
+		return FALSE;
+	}
+	*neighbor = neighbors_vars.neighbors[i].addr_64b;
+	return TRUE;
+}
+

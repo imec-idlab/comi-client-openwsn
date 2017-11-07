@@ -26,26 +26,30 @@ except ImportError:
     print 'ImportError: cannot find openvisualizer.moteState module'
     print 'sys.path:\n\t{0}'.format('\n\t'.join(str(p) for p in sys.path))
 
-from   cmd         import Cmd
+from   cmd import Cmd
 import openVisualizerApp
+from openCoMI import openCoMI
 import openvisualizer.openvisualizer_utils as u
 
 
+        
 class OpenVisualizerCli(Cmd):
         
     def __init__(self,app):
         log.info('Creating OpenVisualizerCli')
-        
+               
         # store params
-        self.app                    = app
+        self.app = app
         
         Cmd.__init__(self)
         self.doc_header = 'Commands (type "help all" or "help <topic>"):'
         self.prompt     = '> '
         self.intro      = '\nOpenVisualizer  (type "help" for commands)'
-        
+        comi            = openCoMI(self.app)
+        comi.start()
+
+               
     #======================== public ==========================================
-    
     #======================== private =========================================
     
     #===== callbacks
@@ -145,17 +149,17 @@ class OpenVisualizerCli(Cmd):
                     pass
     
     def do_quit(self, arg):
+        print('stopping')
+        self.comi.stop()
         self.app.close()
         return True
 
     def emptyline(self):
         return
-
-
 #============================ main ============================================
-
+        
 if __name__=="__main__":
     app = openVisualizerApp.main()
-    app.eventBusMonitor.setWiresharkDebug(True)
+    app.eventBusMonitor.setWiresharkDebug(False) #####
     cli = OpenVisualizerCli(app)
     cli.cmdloop()

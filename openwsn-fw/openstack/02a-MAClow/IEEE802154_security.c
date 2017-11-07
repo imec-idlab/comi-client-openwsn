@@ -174,6 +174,7 @@ void IEEE802154_security_init(void) {
    ieee802154_security_vars.MacKeyTable.KeyDescriptorElement[1].KeyUsageList[0].FrameType = IEEE154_TYPE_DATA;
    ieee802154_security_vars.MacKeyTable.KeyDescriptorElement[1].KeyUsageList[1].FrameType = IEEE154_TYPE_ACK;
    ieee802154_security_vars.MacKeyTable.KeyDescriptorElement[1].KeyUsageList[2].FrameType = IEEE154_TYPE_CMD;
+   ieee802154_security_vars.MacKeyTable.KeyDescriptorElement[1].KeyUsageList[3].FrameType = IEEE154_TYPE_PRIORITY;
 
    memcpy(&ieee802154_security_vars.MacKeyTable.KeyDescriptorElement[1].key[0],
           &ieee802154_security_vars.Key_2[0],

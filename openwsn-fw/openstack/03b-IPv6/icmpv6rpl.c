@@ -203,7 +203,7 @@ void icmpv6rpl_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
 void icmpv6rpl_receive(OpenQueueEntry_t* msg) {
    uint8_t      icmpv6code;
    open_addr_t  myPrefix;
-   
+
    // take ownership
    msg->owner      = COMPONENT_ICMPv6RPL;
    

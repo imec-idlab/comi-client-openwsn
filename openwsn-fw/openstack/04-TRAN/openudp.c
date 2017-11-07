@@ -30,14 +30,14 @@
 		desc->next = openudp_vars.resources;
 		openudp_vars.resources = desc;
 	}
-owerror_t openudp_send(OpenQueueEntry_t* msg) {
+
+	owerror_t openudp_send(OpenQueueEntry_t* msg) {
 
 	//A-K
 	if(msg->length>80){
         openserial_printError(COMPONENT_OPENUDP,ERR_LONG_PACKET, (errorparameter_t)msg->length, (errorparameter_t)5);
         return E_FAIL;
 	}
-
     uint8_t* checksum_position;
     msg->owner       = COMPONENT_OPENUDP;
     msg->l4_protocol = IANA_UDP;

@@ -154,7 +154,6 @@ class eventBusMonitor(object):
                     # Forwards a copy of the 6LoWPAN packet destined for the mesh 
                     # to the tun interface for debugging.
                     (nextHop,lowpan) = data
-                    
                     zep = self._wrapMacAndZep(
                         previousHop  = self.dagRootEui64,
                         nextHop      = nextHop,
@@ -226,7 +225,7 @@ class eventBusMonitor(object):
         Wraps ZEP-based debug packet, for outgoing mesh 6LoWPAN message, 
         with UDP and IPv6 headers. Then forwards as an event to the 
         Internet interface.
-        '''
+        '''      
         
         # UDP
         udplen  = len(zep)+8

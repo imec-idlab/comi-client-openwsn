@@ -11,7 +11,6 @@
 #include "opendefs.h"
 #include "idmanager.h"
 
-
 int mote_main(void) {
    
    // initialize
@@ -21,17 +20,17 @@ int mote_main(void) {
    openstack_init();
    
    // indicate
-   open_addr_t  myPrefix;
-   myPrefix.type = ADDR_PREFIX;
-   myPrefix.prefix[0]   = 0xbb;
-   myPrefix.prefix[1]   = 0xbb;
-   myPrefix.prefix[2]   = 0x00;
-   myPrefix.prefix[3]   = 0x00;
-   myPrefix.prefix[4]   = 0x00;
-   myPrefix.prefix[5]   = 0x00;
-   myPrefix.prefix[6]   = 0x00;
-   myPrefix.prefix[7]   = 0x00;
-   idmanager_triggerRoot(&myPrefix);
+//   open_addr_t  myPrefix;
+//   myPrefix.type = ADDR_PREFIX;
+//   myPrefix.prefix[0]   = 0xbb;
+//   myPrefix.prefix[1]   = 0xbb;
+//   myPrefix.prefix[2]   = 0x00;
+//   myPrefix.prefix[3]   = 0x00;
+//   myPrefix.prefix[4]   = 0x00;
+//   myPrefix.prefix[5]   = 0x00;
+//   myPrefix.prefix[6]   = 0x00;
+//   myPrefix.prefix[7]   = 0x00;
+//   idmanager_triggerRoot(&myPrefix);
    
 
    // start

@@ -24,6 +24,8 @@
 // UDP
 #include "uecho.h"
 #include "uinject.h"
+#include "ufirealarm.h"
+#include "umonitor.h"
 
 //=========================== variables =======================================
 
@@ -43,6 +45,8 @@ void openapps_init(void) {
    //cstorm_init();
    //csensors_init();
    cwellknown_init();
+  // ufirealarm_init();
+   umonitor_init();
   // rrt_init();
    // TCP
   // techo_init();

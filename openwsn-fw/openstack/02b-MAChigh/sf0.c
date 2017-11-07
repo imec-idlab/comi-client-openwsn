@@ -117,8 +117,9 @@ void sf0_bandwidthEstimate_task(void){
     // get bandwidth of outgoing, incoming and self.
     // Here we just calculate the estimated bandwidth for 
     // the application sending on dedicate cells(TX or Rx).
-    bw_outgoing = schedule_getNumOfSlotsByType(CELLTYPE_TX);
-    bw_incoming = schedule_getNumOfSlotsByType(CELLTYPE_RX);
+    // A-K but only for soft cells
+    bw_outgoing = schedule_getNumOfSlotsByType(CELLTYPE_TX, FALSE);
+    bw_incoming = schedule_getNumOfSlotsByType(CELLTYPE_RX, FALSE);
     
     // get self required bandwith, you can design your
     // application and assign bw_self accordingly. 

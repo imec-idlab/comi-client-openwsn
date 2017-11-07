@@ -43,9 +43,8 @@ bool               openqueue_isHighPriorityEntryEnough(void);
 OpenQueueEntry_t*  openqueue_sixtopGetSentPacket(void);
 OpenQueueEntry_t*  openqueue_sixtopGetReceivedPacket(void);
 // called by IEEE80215E
-OpenQueueEntry_t*  openqueue_macGetDataPacket(open_addr_t* toNeighbor);
+OpenQueueEntry_t*  openqueue_macGetDataPacket(open_addr_t* toNeighbor, uint8_t isHard, uint8_t label);
 OpenQueueEntry_t*  openqueue_macGetEBPacket(void);
-
 /**
 \}
 \}

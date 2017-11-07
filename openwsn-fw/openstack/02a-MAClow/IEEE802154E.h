@@ -21,6 +21,10 @@ static const uint8_t chTemplate_default[] = {
 };
 
 //=========================== define ==========================================
+//A-K
+#define IEEE_FRAME_START_REGISTER(ptr) frame_start_cb = ptr;
+extern void (*frame_start_cb)(void);
+
 
 #define SYNCHRONIZING_CHANNEL       20 // channel the mote listens on to synchronize
 #define TXRETRIES                    3 // number of MAC retries before declaring failed

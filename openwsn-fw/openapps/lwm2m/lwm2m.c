@@ -28,6 +28,8 @@
 #define LWM2M_DEVICE_TYPE 2
 #endif
 
+#define TO_HEX(i) (i <= 9 ? '0' + i : 'A' - 10 + i)
+
 const	uri_t URI_ipso_temp_object[] = "3303";
 const	uri_t URI_ipso_hum_object[] = "3304";
 const	uri_t URI_ipso_led_object[] = "3311";
@@ -43,9 +45,8 @@ static const 	uri_t URI_oma_rd[] = "rd";
 
 //static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
                                         0x02, 0x0d, 0xb9, 0xff, 0xfe, 0x40, 0x31, 0x14};
-static const uint8_t ipAddr_lwm2mserver[] = {0xbb, 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-
+static const uint8_t ipAddr_lwm2mserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
+                                        0x02, 0x0d, 0xb9, 0xff, 0xfe, 0x40, 0x31, 0x14};
 
 //=========================== variables =======================================
 
@@ -783,6 +784,10 @@ void lwm2m_register_server() {
 
       numOptions=0;
       // query option
+      uint8_t x = idmanager_getMyID(ADDR_64B)->addr_64b[7];
+      uint8_t endpoint[5]="ep=  ";
+      endpoint[3] = TO_HEX(((x & 0xF0) >> 4));
+      endpoint[4] = TO_HEX(((x & 0x0F) >> 0));
       packetfunctions_reserveHeaderSize(pkt,sizeof(endpoint)-1);
       memcpy(&pkt->payload[0],&endpoint,sizeof(endpoint)-1);
       packetfunctions_reserveHeaderSize(pkt,1);

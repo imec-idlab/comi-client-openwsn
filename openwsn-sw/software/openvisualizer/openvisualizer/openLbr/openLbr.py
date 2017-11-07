@@ -228,6 +228,7 @@ class OpenLbr(eventBusClient.eventBusClient):
             
             #print "output:"
             #print lowpan_bytes
+            
             # dispatch
             self.dispatch(
                 signal       = 'bytesToMesh',
@@ -254,7 +255,8 @@ class OpenLbr(eventBusClient.eventBusClient):
             
             #read next header
             if ipv6dic['next_header']==self.IANA_IPv6HOPHEADER:
-                #hop by hop header present, check flags and parse    
+                #hop by hop header present, check flags and parse   
+                
                 if (ipv6dic['hop_flags'] & self.O_FLAG) == self.O_FLAG:
                     #error -- this packet has gone downstream somewhere.
                     log.error("detected possible downstream link on upstream route from {0}".format(",".join(str(c) for c in ipv6dic['src_addr'])))
@@ -367,7 +369,7 @@ class OpenLbr(eventBusClient.eventBusClient):
             
             # assemble the packet and dispatch it again as nobody answer 
             ipv6pkt=self.reassemble_ipv6_packet(ipv6dic)       
-            
+
             self.dispatch('v6ToInternet',ipv6pkt)
             
         except (ValueError,NotImplementedError) as err:

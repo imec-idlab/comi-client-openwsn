@@ -68,7 +68,7 @@ def findSerialPorts():
         if platform.system() == 'Darwin':
             portMask = ['/dev/tty.usbserial-*']
         else:
-            portMask = ['/dev/ttyUSB*', '/dev/ttyAMA*', '/dev/ttyA8_M3']
+            portMask = ['/dev/ttyUSB*', '/dev/ttyAMA*', '/dev/ttyA8_M3'] # A-K where to define border router
         for mask in portMask :
             serialports += [(s,BAUDRATE_GINA) for s in glob.glob(mask)]
 
@@ -180,10 +180,9 @@ class moteProbe(threading.Thread):
     def run(self):
         try:
             # log
-            log.info("start running")
-        
+            log.info("start running")  
             while self.goOn:     # open serial port
-                
+        
                 # log 
                 log.info("open port {0}".format(self.portname))
                 

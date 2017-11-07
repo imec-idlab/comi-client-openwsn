@@ -26,6 +26,9 @@ class typeRssi(openType.openType):
     
     def update(self,rssi):
         self.rssi = rssi
+        
+    def get(self):
+        return '{0}'.format(self.rssi)
     
     #======================== private =========================================
     

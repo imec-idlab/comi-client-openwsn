@@ -36,7 +36,7 @@ class ParserPacket(Parser.Parser):
         # log
         if log.isEnabledFor(logging.DEBUG):
             log.debug("received packet {0}".format(input))
-        
+
         # ensure input not short longer than header
         self._checkLength(input)
    

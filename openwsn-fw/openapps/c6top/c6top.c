@@ -146,9 +146,8 @@ owerror_t comi_celllist_receive(
 		coap_header_iht*  coap_header,
 		coap_option_iht*  coap_options
 ) {
-
 	owerror_t           outcome;
-	uint8_t 			comi_payload[MAX_PAYLOAD_SIZE];
+	uint8_t 			comi_payload[MAX_COAP_PAYLOAD_SIZE];
 	uint8_t 			comi_payload_length=0;
 	uint16_t 			maxActiveSlots = schedule_getMaxActiveSlots();
 	uint8_t 			posQuery =getOptionPosition(coap_options,COAP_OPTION_NUM_URIQUERY);
@@ -220,7 +219,7 @@ owerror_t comi_celllist_receive(
 
 				while (i<maxActiveSlots) {
 
-					if(comi_payload_length>MAX_PAYLOAD_SIZE-1){
+					if(comi_payload_length>MAX_COAP_PAYLOAD_SIZE-1){
 						break;
 					}
 					else if(c6top_vars.comi_celllist.schedule_vars->scheduleBuf[i].type!=CELLTYPE_OFF){
@@ -234,7 +233,8 @@ owerror_t comi_celllist_receive(
 				}
 			}
 
-			if(comi_payload_length>=MAX_PAYLOAD_SIZE){
+			if(comi_payload_length>=MAX_COAP_PAYLOAD_SIZE){
+				openserial_printError(COMPONENT_COMI,ERR_LONG_PACKET,(errorparameter_t)33, (errorparameter_t)comi_payload_length);
 				outcome = E_FAIL;
 				break;
 			}
@@ -271,7 +271,7 @@ owerror_t comi_celllist_receive(
 
 			break;
 
-		case COAP_CODE_REQ_POST:
+		case COAP_CODE_REQ_PUT: 	// Putting a new Schedule
 
 			if(posQuery<MAX_COAP_OPTIONS){
 				uint8_t key=0;
@@ -280,11 +280,26 @@ owerror_t comi_celllist_receive(
 					break;
 				}
 
-				//schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset, cellType_t type, bool shared,channelOffset_t channelOffset,open_addr_t* neighbor);
+				int baseSID=4001;
+				scheduleEntry_t cell;
+				uint8_t cellID;
+				if(comi_deserialize_cell(msg,&cell,&cellID,baseSID)==E_FAIL){
+					coap_header->Code             = COAP_CODE_RESP_NOTFOUND;
+					outcome                       = E_FAIL;
+				}
 
-				if(schedule_addActiveSlotByID(key,9,15,CELLTYPE_TX,FALSE,&c6top_vars.comi_neighborlist.neighbors_vars->neighbors[0].addr_64b)==E_SUCCESS){
+				msg->payload                     = &(msg->packet[127]);
+				msg->length                      = 0;
+
+				if(key!=cellID){
+					coap_header->Code             = COAP_CODE_RESP_BADREQ;
+					outcome                       = E_FAIL;
+					break;
+				}
+
+				if(schedule_addActiveSlotByID(key,cell.slotOffset,cell.channelOffset,cell.type,cell.isHard,cell.shared,cell.label,&cell.neighbor)==E_SUCCESS){
 					// set the CoAP header
-					coap_header->Code             = COAP_CODE_RESP_CREATED;
+					coap_header->Code             = COAP_CODE_RESP_CHANGED;
 					outcome                       = E_SUCCESS;
 				}
 				else{
@@ -305,6 +320,9 @@ owerror_t comi_celllist_receive(
 					outcome = E_FAIL;
 					break;
 				}
+
+				msg->payload                     = &(msg->packet[127]);
+				msg->length                      = 0;
 
 				if(schedule_removeActiveSlotByID(key)==E_SUCCESS){
 					// set the CoAP header
@@ -344,7 +362,7 @@ owerror_t comi_neighborlist_receive(
 
 				uint8_t pos=0;
 				uint8_t NeighborNum=neighbors_getNumNeighbors();
-				uint8_t comi_payload[MAX_PAYLOAD_SIZE];
+				uint8_t comi_payload[MAX_COAP_PAYLOAD_SIZE];
 				uint8_t i;
 				if(NeighborNum>0){
 					if(NeighborNum==1){
@@ -419,7 +437,7 @@ owerror_t comi_routingtable_receive(
 ) {
 
 	owerror_t            outcome;
-	uint8_t 			comi_payload[MAX_PAYLOAD_SIZE];
+	uint8_t 			comi_payload[MAX_COAP_PAYLOAD_SIZE];
 	uint8_t 			comi_payload_length=0;
 	uint8_t 			posQuery =getOptionPosition(coap_options,COAP_OPTION_NUM_URIQUERY);
 
@@ -518,6 +536,116 @@ uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id)
 	return size;
 }
 
+
+/* deserialize cell */
+owerror_t comi_deserialize_cell(OpenQueueEntry_t* msg, scheduleEntry_t* cell, uint8_t* cellID, int baseSID)
+{
+	cell->isHard=TRUE;				//default
+	cell->shared=FALSE; 			//default
+	cell->label=0; 					//default
+	cell->type = CELLTYPE_OFF; 		//default
+	uint8_t numObjects=0;
+	cbor_stream_t cbor_stream;
+	cbor_stream.data=&msg->payload[0];
+	cbor_stream.size=msg->length;
+	cbor_stream.pos=0;
+
+	cbor_stream.pos = cbor_stream.pos + cbor_deserialize_map(&cbor_stream, cbor_stream.pos, &numObjects);
+
+	uint8_t curser=0;
+	int value;
+	uint8_t sid=0;
+	uint8_t readBytes;
+	uint8_t myoption[1];
+	uint8_t neighboraddress[1];
+	while(curser<numObjects){
+			cbor_stream.pos=cbor_stream.pos+cbor_deserialize_int(&cbor_stream,cbor_stream.pos,&value);
+			sid=(uint8_t) value;
+			switch(sid){
+			case 1:
+					readBytes=cbor_deserialize_int(&cbor_stream,cbor_stream.pos,&value);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;
+						*cellID = (uint8_t) value;					// cell id
+
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			case 2:
+					readBytes=cbor_deserialize_int(&cbor_stream,cbor_stream.pos,&value);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;
+					//	uint8_t slotframeID = (uint8_t) value;			// slotframe id
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			case 3:
+					readBytes=cbor_deserialize_int(&cbor_stream,cbor_stream.pos,&value);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;
+						cell->slotOffset = (uint8_t) value;				// slotoffset
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			case 4:
+					readBytes=cbor_deserialize_int(&cbor_stream,cbor_stream.pos,&value);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;
+						cell->channelOffset = (uint8_t) value;				// choffset
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			case 5:
+					readBytes=cbor_deserialize_byte(&cbor_stream,cbor_stream.pos,&myoption[0]);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;				// link options
+						cell->type = get_cellType(myoption[0]);
+						cell->isHard=TRUE;
+						cell->shared=((myoption[0] & 0x20)>0);
+
+						if((myoption[0] & 0x08)>0){
+							cell->label=COMPONENT_UFIRE;
+						}
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			case 6:
+				readBytes=cbor_deserialize_byte(&cbor_stream,cbor_stream.pos,&neighboraddress[0]);
+					if(readBytes > 0){
+						cbor_stream.pos=cbor_stream.pos+readBytes;				// address
+						if(getNeighborAddressFromLastByte(&cell->neighbor, neighboraddress[0])==FALSE){
+							openserial_printError(COMPONENT_NEIGHBORS,ERR_NO_NEIGHBOR,
+							                               (errorparameter_t)neighboraddress[0],
+							                               (errorparameter_t)0);
+							return E_FAIL;
+						}
+					}
+					else{
+						return E_FAIL;
+					}
+				break;
+			default:
+				return E_FAIL;
+				break;
+
+			}
+
+			curser++;
+	}
+	return E_SUCCESS;
+
+}
+
 /* serialize neighbor with neighborid */
 uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_id)
 {
@@ -536,7 +664,7 @@ uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_i
 
 	// write rssi
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_rssi-SID_comi_neighborlist);
-	size = size + cbor_serialize_uint8(&comi_payload_curser[size], c6top_vars.comi_neighborlist.neighbors_vars->neighbors[neighbor_id].rssi);
+	size = size + cbor_serialize_int8(&comi_payload_curser[size], c6top_vars.comi_neighborlist.neighbors_vars->neighbors[neighbor_id].rssi);
 
 	// write statistics
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_lqi-SID_comi_neighborlist);
@@ -546,7 +674,6 @@ uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_i
 	// write asn
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_neigh_diffasn-SID_comi_neighborlist);
 	size = size + cbor_serialize_uint16(&comi_payload_curser[size], c6top_vars.comi_celllist.schedule_vars->currentScheduleEntry->lastUsedAsn.bytes0and1-c6top_vars.comi_neighborlist.neighbors_vars->neighbors[neighbor_id].asn.bytes0and1);
-
 
 	return size;
 }
@@ -560,7 +687,7 @@ uint8_t comi_serialize_route(uint8_t* comi_payload_curser, uint8_t route_id)
 	comi_payload_curser[size] = cbor_serialize_map(0x05);
 	size++;
 
-	// write neighborid
+	// write routeid
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], SID_comi_routeid-SID_comi_routingtable);
 	size = size + cbor_serialize_uint8(&comi_payload_curser[size], route_id);
 
@@ -613,10 +740,40 @@ uint8_t get_linkoption(scheduleEntry_t* schedule)
 	if(schedule->shared==TRUE){
 		linkoption=linkoption + 0x20;
 	}
-	// todo soft/hard
+
+	if(schedule->isHard==TRUE){
+		linkoption=linkoption + 0x04;
+	}
+
+	if(schedule->label>0){
+		linkoption=linkoption + 0x08;
+	}
 	// normal/advertising to be added
 	return linkoption;
 }
+
+uint8_t get_cellType(uint8_t linkoption)
+{
+	uint8_t cellType = CELLTYPE_OFF;
+	if((linkoption & 0x80)>0 && (linkoption & 0x40)>0){
+		cellType=CELLTYPE_TXRX;
+	} else if((linkoption & 0x80)>0){
+		cellType=CELLTYPE_TX;
+	} else if((linkoption & 0x40)>0){
+		cellType=CELLTYPE_RX;
+	}
+	return cellType;
+}
+
+uint8_t get_Label(uint8_t linkoption)
+{
+	uint8_t label = 0;
+	if((linkoption & 0x08)>0){
+		label=COMPONENT_UFIRE;
+	}
+	return label;
+}
+
 
 
 //timer fired, but we don't want to execute task in ISR mode
@@ -644,7 +801,7 @@ void comi_send_neighbor_notification() {
 
 	      uint8_t pos=0;
 	      uint8_t NeighborNum=neighbors_getNumNeighbors();
-	      uint8_t comi_payload[MAX_PAYLOAD_SIZE];
+	      uint8_t comi_payload[MAX_COAP_PAYLOAD_SIZE];
 	      uint8_t i;
 	      if(NeighborNum>0){
 	    	  if(NeighborNum==1){

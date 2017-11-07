@@ -81,5 +81,13 @@ class typeAddr(openType.openType):
             self.desc = 'unknown'
             self.addr = None
     
+    
+        
+    def get(self):
+        output  = []
+        if self.addr:
+           output += ['-'.join(["%.2x"%b for b in self.addr])]
+        return ''.join(output)
+    
     #======================== private =========================================
     

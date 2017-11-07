@@ -63,7 +63,7 @@ typedef struct{//Table which contains the device that are currently using this k
 typedef struct{//descriptor of the key
    m_keyIdLookupDescriptor KeyIdLookupList;
    m_macDeviceTable*       DeviceTable;
-   m_keyUsageDescriptor    KeyUsageList[3];
+   m_keyUsageDescriptor    KeyUsageList[4];
    uint8_t                 key[16];
 } m_keyDescriptor;
 

@@ -50,7 +50,9 @@ void schedule_init() {
       schedule_addActiveSlot(
          running_slotOffset,                    // slot offset
          CELLTYPE_SERIALRX,                     // type of slot
+		 FALSE,									// isHard
          FALSE,                                 // shared?
+		 0,								   		// label
          0,                                     // channel offset
          &temp_neighbor                         // neighbor
       );
@@ -83,7 +85,9 @@ void schedule_startDAGroot() {
       schedule_addActiveSlot(
          running_slotOffset,                 // slot offset
          CELLTYPE_TXRX,                      // type of slot
+		 FALSE,								 // isHard
          TRUE,                               // shared?
+		 0,								   // label
          SCHEDULE_MINIMAL_6TISCH_CHANNELOFFSET,    // channel offset
          &temp_neighbor                      // neighbor
       );
@@ -110,8 +114,12 @@ bool debugPrint_schedule() {
       schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].slotOffset;
    temp.type                           = \
       schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].type;
+   temp.isHard                           = \
+       schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].isHard;
    temp.shared                         = \
       schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].shared;
+   temp.label                         = \
+      schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].label;
    temp.channelOffset                  = \
       schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].channelOffset;
    memcpy(
@@ -130,7 +138,7 @@ bool debugPrint_schedule() {
       &schedule_vars.scheduleBuf[schedule_vars.debugPrintRow].lastUsedAsn,
       sizeof(asn_t)
    );
-   
+
    // send status data over serial port
    openserial_printStatus(
       STATUS_SCHEDULE,
@@ -227,7 +235,6 @@ void  schedule_getSlotInfo(
    open_addr_t*         neighbor,
    slotinfo_element_t*  info
 ){
-   
    scheduleEntry_t* slotContainer;
   
    // find an empty schedule entry container
@@ -237,7 +244,9 @@ void  schedule_getSlotInfo(
        if (packetfunctions_sameAddress(neighbor,&(slotContainer->neighbor))&& (slotContainer->slotOffset==slotOffset)){
                //it exists so this is an update.
                info->link_type                 = slotContainer->type;
+               info->isHard                    =slotContainer->isHard;
                info->shared                    =slotContainer->shared;
+               info->label                    =slotContainer->label;
                info->channelOffset             = slotContainer->channelOffset;
                return; //as this is an update. No need to re-insert as it is in the same position on the list.
         }
@@ -245,7 +254,9 @@ void  schedule_getSlotInfo(
    }
    //return cell type off.
    info->link_type                 = CELLTYPE_OFF;
+   info->isHard                    = FALSE;
    info->shared                    = FALSE;
+   info->label                     = 0;
    info->channelOffset             = 0;//set to zero if not set.                          
 }
 
@@ -271,7 +282,9 @@ uint16_t  schedule_getMaxActiveSlots() {
 owerror_t schedule_addActiveSlot(
       slotOffset_t    slotOffset,
       cellType_t      type,
+	  bool			  isHard,
       bool            shared,
+	  uint8_t		  label,
       channelOffset_t channelOffset,
       open_addr_t*    neighbor
    ) {
@@ -305,7 +318,9 @@ owerror_t schedule_addActiveSlot(
    // fill that schedule entry with parameters passed
    slotContainer->slotOffset                = slotOffset;
    slotContainer->type                      = type;
+   slotContainer->isHard                    = isHard;
    slotContainer->shared                    = shared;
+   slotContainer->label                     = label;
    slotContainer->channelOffset             = channelOffset;
    memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
    
@@ -348,12 +363,14 @@ owerror_t schedule_addActiveSlot(
             openserial_printError(
                COMPONENT_SCHEDULE,ERR_SCHEDULE_ADDDUPLICATESLOT,
                (errorparameter_t)slotContainer->slotOffset,
-               (errorparameter_t)0
+               (errorparameter_t)3
             );
             // reset the entry
             slotContainer->slotOffset                = 0;
             slotContainer->type                      = CELLTYPE_OFF;
+            slotContainer->isHard                    = FALSE;
             slotContainer->shared                    = FALSE;
+            slotContainer->label                     = 0;
             slotContainer->channelOffset             = 0;
             memset(&slotContainer->neighbor,0,sizeof(open_addr_t));
             ENABLE_INTERRUPTS();
@@ -517,7 +534,7 @@ scheduleEntry_t* schedule_getCurrentScheduleEntry(){
 }
 
 //=== from otf
-uint8_t schedule_getNumOfSlotsByType(cellType_t type){
+uint8_t schedule_getNumOfSlotsByType(cellType_t type, bool isHard){
    uint8_t returnVal;
    scheduleEntry_t* scheduleWalker;
    
@@ -527,7 +544,7 @@ uint8_t schedule_getNumOfSlotsByType(cellType_t type){
    returnVal = 0;
    scheduleWalker = schedule_vars.currentScheduleEntry;
    do {
-      if(type == scheduleWalker->type){
+      if(type == scheduleWalker->type && isHard==scheduleWalker->isHard){
           returnVal += 1;
       }
       scheduleWalker = scheduleWalker->next;
@@ -547,7 +564,7 @@ uint8_t schedule_getNumberOfFreeEntries(){
    
    counter = 0;
    for(i=0;i<MAXACTIVESLOTS;i++) {
-      if(schedule_vars.scheduleBuf[i].type == CELLTYPE_OFF){
+      if(schedule_vars.scheduleBuf[i].type == CELLTYPE_OFF && schedule_vars.scheduleBuf[i].isHard== FALSE){
          counter++;
       }
    }
@@ -830,7 +847,6 @@ void schedule_housekeeping(){
     uint8_t     i;
     open_addr_t neighbor;
     
-    
     INTERRUPT_DECLARATION();
     DISABLE_INTERRUPTS();
 
@@ -871,12 +887,11 @@ void schedule_remove_allTXandRX_Cells(){
 
     ENABLE_INTERRUPTS();
 }
-
-
 schedule_vars_t* schedule_getSchedule_Vars(){
     return &schedule_vars;
 }
 
+//todo A-K Need to check if it is hard or soft.. and then take necessary actions
 owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
    scheduleEntry_t* slotContainer;
    scheduleEntry_t* previousSlotWalker;
@@ -889,6 +904,15 @@ owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
 	   return E_FAIL;
    }
    slotContainer = &schedule_vars.scheduleBuf[cellID];
+
+   if(slotContainer->isHard==FALSE){ // need to inform neighbor
+	   cellInfo_ht       cellList[SCHEDULEIEMAXNUMCELLS];
+	   memset(cellList,0,sizeof(cellList));
+	   cellList[0].tsNum           = slotContainer->slotOffset;
+	   cellList[0].choffset        = slotContainer->channelOffset;
+	   cellList[0].linkoptions     = slotContainer->type;
+	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(slotContainer->neighbor),&cellList[0]);
+  	}
 
    // remove from linked list
    if (slotContainer->next==slotContainer) {
@@ -930,17 +954,27 @@ owerror_t schedule_removeActiveSlotByID(uint8_t cellID) {
    return E_SUCCESS;
 }
 
+
+// CoMI - Adding a Slot by CellID
 owerror_t schedule_addActiveSlotByID(
 		uint8_t cellID,
       slotOffset_t    slotOffset,
       channelOffset_t channelOffset,
       cellType_t      type,
+	  bool			  isHard,
       bool            shared,
+      uint8_t         label,
       open_addr_t*    neighbor
    ) {
    scheduleEntry_t* slotContainer;
    scheduleEntry_t* previousSlotWalker;
    scheduleEntry_t* nextSlotWalker;
+
+   openserial_printInfo(
+      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+      (errorparameter_t)1,
+      (errorparameter_t)cellID
+   );
 
    INTERRUPT_DECLARATION();
    DISABLE_INTERRUPTS();
@@ -952,13 +986,8 @@ owerror_t schedule_addActiveSlotByID(
 
    slotContainer = &schedule_vars.scheduleBuf[cellID];
 
-   if(slotContainer->type!=CELLTYPE_OFF){
-	      ENABLE_INTERRUPTS();
-   	   return E_FAIL;
-   }
-
    // abort it schedule overflow
-   if (slotContainer>&schedule_vars.scheduleBuf[schedule_vars.maxActiveSlots-1]) {
+   if (slotContainer>&schedule_vars.scheduleBuf[schedule_vars.maxActiveSlots-1] && schedule_isCellAlreadyInSchedule(slotContainer)==FALSE) {
       ENABLE_INTERRUPTS();
       openserial_printError(
          COMPONENT_SCHEDULE,ERR_SCHEDULE_OVERFLOWN,
@@ -968,78 +997,401 @@ owerror_t schedule_addActiveSlotByID(
       return E_FAIL;
    }
 
-   // fill that schedule entry with parameters passed
-   slotContainer->slotOffset                = slotOffset;
-   slotContainer->type                      = type;
-   slotContainer->shared                    = shared;
-   slotContainer->channelOffset             = channelOffset;
-   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+   // abort if there is already another hard slot with the same slotoffset
+   if(slotContainer->slotOffset!=slotOffset && schedule_isSlotOffsetHardAvailable(slotOffset)==FALSE){
+	      ENABLE_INTERRUPTS();
+		 openserial_printError(
+				 COMPONENT_SCHEDULE,ERR_SCHEDULE_ADDDUPLICATESLOT,
+				 (errorparameter_t)slotContainer->slotOffset,
+				 (errorparameter_t)0
+		 );
+	      return E_FAIL;
+   }
 
-   // insert in circular list
-   if (schedule_vars.currentScheduleEntry==NULL) {
-      // this is the first active slot added
+   if(schedule_isCellAlreadyInSchedule(slotContainer)==FALSE && schedule_isSlotOffsetAvailable(slotOffset)==TRUE){ // You can directly add the schedule
+	   // fill that schedule entry with parameters passed
+	   slotContainer->slotOffset                = slotOffset;
+	   slotContainer->type                      = type;
+	   slotContainer->isHard                    = isHard;
+	   slotContainer->shared                    = shared;
+	   slotContainer->label                     = label;
+	   slotContainer->channelOffset             = channelOffset;
+	   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	   insertInTheSchedule(slotContainer);
+	   ENABLE_INTERRUPTS();
+	   openserial_printInfo(
+	      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+	      (errorparameter_t)2,
+	      (errorparameter_t)cellID
+	   );
+	   return E_SUCCESS;
+   }
+   else if(schedule_isCellAlreadyInSchedule(slotContainer)==FALSE && schedule_isSlotOffsetAvailable(slotOffset)==FALSE){ //Cell is inactive, but there is another cell with the same slotoffset
+	   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	   do {
+		   nextSlotWalker                     = previousSlotWalker->next;
+		   if(slotOffset == nextSlotWalker->slotOffset){
+			   break;
+		   }
+		   previousSlotWalker = nextSlotWalker;
+	   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
 
-      // the next slot of this slot is this slot
-      slotContainer->next                   = slotContainer;
+	   cellInfo_ht       cellList[SCHEDULEIEMAXNUMCELLS];
+	   memset(cellList,0,sizeof(cellList));
 
-      // current slot points to this slot
-      schedule_vars.currentScheduleEntry    = slotContainer;
-   } else  {
-      // this is NOT the first active slot added
+	   cellList[0].tsNum           = nextSlotWalker->slotOffset;
+	   cellList[0].choffset        = nextSlotWalker->channelOffset;
+	   cellList[0].linkoptions     = nextSlotWalker->type;
 
-      // find position in schedule
-      previousSlotWalker                    = schedule_vars.currentScheduleEntry;
-      while (1) {
-         nextSlotWalker                     = previousSlotWalker->next;
-         if (
-               (
-                     (previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
-                     (slotContainer->slotOffset <  nextSlotWalker->slotOffset)
-               )
-               ||
-               (
-                     (previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
-                     (nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
-               )
-               ||
-               (
-                     (slotContainer->slotOffset <  nextSlotWalker->slotOffset) &&
-                     (nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
-               )
-         ) {
-            break;
-         }
+	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(nextSlotWalker->neighbor),&cellList[0]);
 
-         if (previousSlotWalker->slotOffset == slotContainer->slotOffset) {
-            // slot is already in schedule
-            openserial_printError(
-               COMPONENT_SCHEDULE,ERR_SCHEDULE_ADDDUPLICATESLOT,
-               (errorparameter_t)slotContainer->slotOffset,
-               (errorparameter_t)0
-            );
-            // reset the entry
-            slotContainer->slotOffset                = 0;
-            slotContainer->type                      = CELLTYPE_OFF;
-            slotContainer->shared                    = FALSE;
-            slotContainer->channelOffset             = 0;
-            memset(&slotContainer->neighbor,0,sizeof(open_addr_t));
-            ENABLE_INTERRUPTS();
-            return E_FAIL;
-         }
-         previousSlotWalker                 = nextSlotWalker;
-      }
+	   scheduleEntry_t* tempSlotContainer=nextSlotWalker->next;
+	   nextSlotWalker->slotOffset                = 0;
+	   nextSlotWalker->type                      = CELLTYPE_OFF;
+	   nextSlotWalker->isHard                    = FALSE;
+	   nextSlotWalker->shared                    = FALSE;
+	   nextSlotWalker->label                     = 0;
+	   nextSlotWalker->channelOffset             = 0;
+	   memset(&nextSlotWalker->neighbor,0,sizeof(open_addr_t));
+	   nextSlotWalker->next=NULL;
+	   previousSlotWalker->next = tempSlotContainer;
 
+	   // fill that schedule entry with parameters passed
+	   slotContainer->slotOffset                = slotOffset;
+	   slotContainer->type                      = type;
+	   slotContainer->isHard                    = isHard;
+	   slotContainer->shared                    = shared;
+	   slotContainer->label                     = label;
+	   slotContainer->channelOffset             = channelOffset;
+	   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	   insertInTheSchedule(slotContainer);
+	   ENABLE_INTERRUPTS();
+	   openserial_printInfo(
+	      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+	      (errorparameter_t)3,
+	      (errorparameter_t)cellID
+	   );
+	   return E_SUCCESS;
+   }
+   else if(schedule_isCellAlreadyInSchedule(slotContainer)==TRUE && slotContainer->isHard==TRUE &&schedule_isSlotOffsetAvailable(slotOffset)==TRUE){ // cell is hard active, but there is no other cell with the same slotoffset
+	   //need to update the position in the schedule
 
-      openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t) previousSlotWalker->slotOffset, (errorparameter_t)nextSlotWalker->slotOffset);
-      openserial_printError(COMPONENT_COMI,ERR_AK_COMI,(errorparameter_t) previousSlotWalker->channelOffset, (errorparameter_t)nextSlotWalker->channelOffset);
-      // insert between previousSlotWalker and nextSlotWalker
-      previousSlotWalker->next              = slotContainer;
-      slotContainer->next                   = nextSlotWalker;
+	   if(slotContainer->slotOffset==slotOffset)	// only need to update values
+	   {
+		   // fill that schedule entry with parameters passed
+		   slotContainer->type                      = type;
+		   slotContainer->isHard                    = isHard;
+		   slotContainer->shared                    = shared;
+		   slotContainer->label                    = label;
+		   slotContainer->channelOffset             = channelOffset;
+		   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	   }
+	   else{
+		   previousSlotWalker = schedule_vars.currentScheduleEntry;
+		   do {
+			   nextSlotWalker = previousSlotWalker->next;
+			   if(slotContainer == nextSlotWalker){
+				   break;
+			   }
+			   previousSlotWalker = nextSlotWalker;
+		   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+		   previousSlotWalker->next = nextSlotWalker->next;
+
+		   // fill that schedule entry with parameters passed
+		   slotContainer->slotOffset				= slotOffset;
+		   slotContainer->type                      = type;
+		   slotContainer->isHard                    = isHard;
+		   slotContainer->shared                    = shared;
+		   slotContainer->label                     = label;
+		   slotContainer->channelOffset             = channelOffset;
+		   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+		   slotContainer->next=NULL;
+		   insertInTheSchedule(slotContainer);
+	   }
+		   ENABLE_INTERRUPTS();
+		   openserial_printInfo(
+		      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+		      (errorparameter_t)4,
+		      (errorparameter_t)cellID
+		   );
+		   return E_SUCCESS;
+   }
+   else if(schedule_isCellAlreadyInSchedule(slotContainer)==TRUE && slotContainer->isHard==FALSE &&schedule_isSlotOffsetAvailable(slotOffset)==TRUE){ // cell is soft active, but there is no other cell with the same slotoffset
+
+	   // removing target cell from the schedule
+	   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	   do {
+		   nextSlotWalker = previousSlotWalker->next;
+		   if(slotContainer == nextSlotWalker){
+			   break;
+		   }
+		   previousSlotWalker = nextSlotWalker;
+	   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+	   cellInfo_ht       cellList[SCHEDULEIEMAXNUMCELLS];
+	   memset(cellList,0,sizeof(cellList));
+
+	   cellList[0].tsNum           = nextSlotWalker->slotOffset;
+	   cellList[0].choffset        = nextSlotWalker->channelOffset;
+	   cellList[0].linkoptions     = nextSlotWalker->type;
+
+	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(nextSlotWalker->neighbor),&cellList[0]);
+	   previousSlotWalker->next = nextSlotWalker->next;
+
+	   // adding new slot
+	   slotContainer->slotOffset                = slotOffset;
+	   slotContainer->type                      = type;
+	   slotContainer->isHard                    = isHard;
+	   slotContainer->shared                    = shared;
+	   slotContainer->label                     = label;
+	   slotContainer->channelOffset             = channelOffset;
+	   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	   slotContainer->next=NULL;
+	   insertInTheSchedule(slotContainer);
+	   ENABLE_INTERRUPTS();
+
+	   openserial_printInfo(
+	      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+	      (errorparameter_t)5,
+	      (errorparameter_t)cellID
+	   );
+	   return E_SUCCESS;
+   }
+   else if(schedule_isCellAlreadyInSchedule(slotContainer)==TRUE && slotContainer->isHard==TRUE && schedule_isSlotOffsetAvailable(slotOffset)==FALSE){ // cell is hard active and also there is another cell with the same slotoffset
+	  // removing the cell with the same slotoffset
+	   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	   do {
+		   nextSlotWalker                     = previousSlotWalker->next;
+		   if(slotOffset == nextSlotWalker->slotOffset){
+			   break;
+		   }
+	 		   previousSlotWalker = nextSlotWalker;
+	 	   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+	 	   cellInfo_ht       cellList[SCHEDULEIEMAXNUMCELLS];
+	 	   memset(cellList,0,sizeof(cellList));
+	 	   cellList[0].tsNum           = nextSlotWalker->slotOffset;
+	 	   cellList[0].choffset        = nextSlotWalker->channelOffset;
+	 	   cellList[0].linkoptions     = nextSlotWalker->type;
+	 	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(nextSlotWalker->neighbor),&cellList[0]);
+
+	 	   scheduleEntry_t* tempSlotContainer=nextSlotWalker->next;
+	 	   nextSlotWalker->slotOffset                = 0;
+	 	   nextSlotWalker->type                      = CELLTYPE_OFF;
+	 	   nextSlotWalker->isHard                    = FALSE;
+	 	   nextSlotWalker->shared                    = FALSE;
+	 	   nextSlotWalker->label                     = 0;
+	 	   nextSlotWalker->channelOffset             = 0;
+	 	   memset(&nextSlotWalker->neighbor,0,sizeof(open_addr_t));
+	 	   nextSlotWalker->next=NULL;
+	 	   previousSlotWalker->next = tempSlotContainer;
+
+	 	   if(slotContainer->slotOffset==slotOffset)	// only need to update values
+	 	   {
+	 		   // fill that schedule entry with parameters passed
+	 		   slotContainer->type                      = type;
+	 		   slotContainer->isHard                    = isHard;
+	 		   slotContainer->shared                    = shared;
+	 		   slotContainer->label                    = label;
+	 		   slotContainer->channelOffset             = channelOffset;
+	 		   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	 	   }
+	 	   else{
+	 		   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	 		   do {
+	 			   nextSlotWalker = previousSlotWalker->next;
+	 			   if(slotContainer == nextSlotWalker){
+	 				   break;
+	 			   }
+	 			   previousSlotWalker = nextSlotWalker;
+	 		   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+	 		   previousSlotWalker->next = nextSlotWalker->next;
+
+	 		   // fill that schedule entry with parameters passed
+	 		   slotContainer->slotOffset				= slotOffset;
+	 		   slotContainer->type                      = type;
+	 		   slotContainer->isHard                    = isHard;
+	 		   slotContainer->shared                    = shared;
+	 		   slotContainer->label                    = label;
+	 		   slotContainer->channelOffset             = channelOffset;
+	 		   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	 		   slotContainer->next=NULL;
+	 		   insertInTheSchedule(slotContainer);
+	 	   }
+
+	 	   ENABLE_INTERRUPTS();
+	 	  openserial_printInfo(
+		      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+		      (errorparameter_t)6,
+		      (errorparameter_t)cellID
+		   );
+	 	   return E_SUCCESS;
+   }
+   else if(schedule_isCellAlreadyInSchedule(slotContainer)==TRUE && slotContainer->isHard==FALSE && schedule_isSlotOffsetAvailable(slotOffset)==FALSE){ // cell is soft active and also there is another cell with the same slotoffset
+	   // removing target cell from the schedule
+	   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	   do {
+		   nextSlotWalker = previousSlotWalker->next;
+		   if(slotContainer == nextSlotWalker){
+			   break;
+		   }
+		   previousSlotWalker = nextSlotWalker;
+	   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+	   cellInfo_ht       cellList[SCHEDULEIEMAXNUMCELLS];
+	   memset(cellList,0,sizeof(cellList));
+
+	   cellList[0].tsNum           = nextSlotWalker->slotOffset;
+	   cellList[0].choffset        = nextSlotWalker->channelOffset;
+	   cellList[0].linkoptions     = nextSlotWalker->type;
+
+	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(nextSlotWalker->neighbor),&cellList[0]);
+	   previousSlotWalker->next = nextSlotWalker->next;
+
+	   // removing the cell with the same slotoffset
+	   previousSlotWalker = schedule_vars.currentScheduleEntry;
+	   do {
+		   nextSlotWalker                     = previousSlotWalker->next;
+		   if(slotOffset == nextSlotWalker->slotOffset){
+			   break;
+		   }
+	 		   previousSlotWalker = nextSlotWalker;
+	 	   }while(previousSlotWalker!=schedule_vars.currentScheduleEntry);
+
+	 	   memset(cellList,0,sizeof(cellList));
+	 	   cellList[0].tsNum           = nextSlotWalker->slotOffset;
+	 	   cellList[0].choffset        = nextSlotWalker->channelOffset;
+	 	   cellList[0].linkoptions     = nextSlotWalker->type;
+	 	   sixtop_addORremoveCellByInfo(IANA_6TOP_CMD_DELETE,&(nextSlotWalker->neighbor),&cellList[0]);
+
+	 	   scheduleEntry_t* tempSlotContainer=nextSlotWalker->next;
+	 	   nextSlotWalker->slotOffset                = 0;
+	 	   nextSlotWalker->type                      = CELLTYPE_OFF;
+	 	   nextSlotWalker->isHard                    = FALSE;
+	 	   nextSlotWalker->shared                    = FALSE;
+	 	   nextSlotWalker->label                    = 0;
+	 	   nextSlotWalker->channelOffset             = 0;
+	 	   memset(&nextSlotWalker->neighbor,0,sizeof(open_addr_t));
+	 	   nextSlotWalker->next=NULL;
+	 	   previousSlotWalker->next = tempSlotContainer;
+
+	 	   // adding new slot
+	 	   slotContainer->slotOffset                = slotOffset;
+	 	   slotContainer->type                      = type;
+	 	   slotContainer->isHard                    = isHard;
+	 	   slotContainer->shared                    = shared;
+	 	   slotContainer->label                    = label;
+	 	   slotContainer->channelOffset             = channelOffset;
+	 	   memcpy(&slotContainer->neighbor,neighbor,sizeof(open_addr_t));
+	 	   insertInTheSchedule(slotContainer);
+	 	   ENABLE_INTERRUPTS();
+	 	  openserial_printInfo(
+		      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+		      (errorparameter_t)7,
+		      (errorparameter_t)cellID
+		   );
+	 	   return E_SUCCESS;
+   }
+   else{
+	   ENABLE_INTERRUPTS();
+	   openserial_printInfo(
+	      COMPONENT_SCHEDULE,ERR_COMI_SLOTOPERATION,
+	      (errorparameter_t)8,
+	      (errorparameter_t)cellID
+	   );
+	   return E_FAIL;
    }
    ENABLE_INTERRUPTS();
    return E_SUCCESS;
 }
 
+void insertInTheSchedule(scheduleEntry_t* slotContainer){
+
+	scheduleEntry_t* previousSlotWalker;
+	scheduleEntry_t* nextSlotWalker;
+	// find position in schedule
+	previousSlotWalker                    = schedule_vars.currentScheduleEntry;
+	while (1) {
+		nextSlotWalker                     = previousSlotWalker->next;
+		if (
+				(
+						(previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
+						(slotContainer->slotOffset <  nextSlotWalker->slotOffset)
+				)
+				||
+				(
+						(previousSlotWalker->slotOffset <  slotContainer->slotOffset) &&
+						(nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
+				)
+				||
+				(
+						(slotContainer->slotOffset <  nextSlotWalker->slotOffset) &&
+						(nextSlotWalker->slotOffset <= previousSlotWalker->slotOffset)
+				)
+		) {
+			break;
+		}
+		previousSlotWalker                 = nextSlotWalker;
+	}
+
+	// insert between previousSlotWalker and nextSlotWalker
+	previousSlotWalker->next              = slotContainer;
+	slotContainer->next                   = nextSlotWalker;
+}
+
+bool schedule_isSlotOffsetHardAvailable(uint16_t slotOffset){
+
+   scheduleEntry_t* scheduleWalker;
+
+   INTERRUPT_DECLARATION();
+   DISABLE_INTERRUPTS();
+
+   scheduleWalker = schedule_vars.currentScheduleEntry;
+   do {
+      if(slotOffset == scheduleWalker->slotOffset && scheduleWalker->isHard==TRUE){
+          ENABLE_INTERRUPTS();
+          return FALSE;
+      }
+      scheduleWalker = scheduleWalker->next;
+   }while(scheduleWalker!=schedule_vars.currentScheduleEntry);
+
+   ENABLE_INTERRUPTS();
+
+   return TRUE;
+}
+
+bool schedule_isCellAlreadyInSchedule(scheduleEntry_t* targetSchedule){
+
+   scheduleEntry_t* scheduleWalker;
+
+   INTERRUPT_DECLARATION();
+   DISABLE_INTERRUPTS();
+
+   scheduleWalker = schedule_vars.currentScheduleEntry;
+   do {
+      if(scheduleWalker==targetSchedule){
+          ENABLE_INTERRUPTS();
+          return TRUE;
+      }
+      scheduleWalker = scheduleWalker->next;
+   }while(scheduleWalker!=schedule_vars.currentScheduleEntry);
+
+   ENABLE_INTERRUPTS();
+
+   return FALSE;
+}
+
+uint8_t schedule_getisHard(void) {
+
+   return schedule_vars.currentScheduleEntry->isHard;
+}
+
+uint8_t schedule_getLabel(void) {
+
+   return schedule_vars.currentScheduleEntry->label;
+}
 
 //=========================== private =========================================
 
@@ -1049,7 +1401,9 @@ owerror_t schedule_addActiveSlotByID(
 void schedule_resetEntry(scheduleEntry_t* e) {
    e->slotOffset             = 0;
    e->type                   = CELLTYPE_OFF;
+   e->isHard                 = FALSE;
    e->shared                 = FALSE;
+   e->label                  = 0;
    e->channelOffset          = 0;
 
    e->neighbor.type          = ADDR_NONE;

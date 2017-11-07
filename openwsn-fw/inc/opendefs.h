@@ -24,7 +24,6 @@
 static const uint8_t infoStackName[] = "OpenWSN ";
 //A-K
 
-static const uint8_t endpoint[] = "ep=T2";
 #define LWM2M_DEVICE_TYPE     3	// 0: ALL, 1: Hum Sensor, 2: Light Control 3: Temp_Sensor
 static const uint8_t device_domain[] = "d=lln";
 
@@ -98,6 +97,8 @@ enum {
    WKP_UDP_COAP                        =    5683,
    WKP_UDP_ECHO                        =       7,
    WKP_UDP_INJECT                      =   61617,// 0xf0b1
+   WKP_UDP_MONITOR                        =   20001,
+   WKP_UDP_FIRE                        =   20002,
    WKP_UDP_RINGMASTER                  =   15000,
    WKP_UDP_SERIALBRIDGE                =    2001,
 };
@@ -181,7 +182,9 @@ enum {
    COMPONENT_LWM2M_TEMP                = 0x31,
    COMPONENT_LWM2M_HUM                 = 0x32,
    COMPONENT_LWM2M_LED                 = 0x33,
-   COMPONENT_COAP_RD                 = 0x34,
+   COMPONENT_COAP_RD                 	= 0x34,
+   COMPONENT_UFIRE        	        	= 0x35,
+   COMPONENT_UMONITOR					=0x36,
 };
 
 /**
@@ -265,6 +268,15 @@ enum {
    ERR_AK_COMI							= 0x41, // COMI message: {0} msg: {1}
    ERR_AK_LWM2M							= 0x42, // LWM2M message: {0} msg: {1}
    ERR_LONG_PACKET						= 0x43, // the coap is trying to send long packet: {0} (code location {1})
+   ERR_INFO_TRANSMIT					= 0x44, // tx packet: @slot: {0} @f: {1}
+   ERR_INFO_RECV						= 0x45, // rx packet: @slot: {0} @f: {1}
+   ERR_NO_NEIGHBOR						= 0x46, // no such neighbor exists! addr: {0} {1}
+   ERR_COMI_SLOTOPERATION				= 0x47, // comi is updating a cell. action: {0} cellID: {1}
+   ERR_6TOP_REQUEST						= 0x48, // 6top request action: {0} pos: {1}
+   ERR_CELL_ACTIVE       				= 0x49, // the cell {0} is already active {1}
+   ERR_RECV_UFIRE_MESSAGE       		= 0x4a, // received ufire message {0} {1}
+   ERR_CELL_SELECTED 		     		= 0x4b, // cell selected hard:{0} labeled:{1}
+   ERR_RECV_UMONITOR_MESSAGE       		= 0x4a, // received umonitor message {0} {1}
 };
 
 //=========================== typedef =========================================
@@ -303,6 +315,7 @@ typedef struct {
    uint8_t       owner;                          // the component which currently owns the entry
    uint8_t*      payload;                        // pointer to the start of the payload within 'packet'
    uint8_t       length;                         // length in bytes of the payload
+   uint8_t		 label;							 // A-K label of the packet
    //l4
    uint8_t       l4_protocol;                    // l4 protocol to be used
    bool          l4_protocol_compressed;         // is the l4 protocol header compressed?

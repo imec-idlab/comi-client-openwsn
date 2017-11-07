@@ -111,7 +111,7 @@ void uinject_task_cb() {
    pkt->payload[1] = (uint8_t)((uinject_vars.counter & 0xff00)>>8);
    pkt->payload[0] = (uint8_t)(uinject_vars.counter & 0x00ff);
    uinject_vars.counter++;
-   
+
    packetfunctions_reserveHeaderSize(pkt,sizeof(asn_t));
    ieee154e_getAsn(asnArray);
    pkt->payload[0] = asnArray[0];
@@ -119,7 +119,7 @@ void uinject_task_cb() {
    pkt->payload[2] = asnArray[2];
    pkt->payload[3] = asnArray[3];
    pkt->payload[4] = asnArray[4];
-   
+
    if ((openudp_send(pkt))==E_FAIL) {
       openqueue_freePacketBuffer(pkt);
    }

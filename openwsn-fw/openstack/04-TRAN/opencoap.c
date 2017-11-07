@@ -98,7 +98,7 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
    
    // find first URI Path
    uint8_t posURIPath=0;
-   bool URIFound=false;
+   bool URIFound=FALSE;
 
    // fill in the coap_options
    last_option = COAP_OPTION_NONE;
@@ -123,9 +123,9 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
       coap_options[i].pValue      = &(msg->payload[index]);
       index                      += coap_options[i].length; //includes length as well
 
-      if(URIFound==false &&  coap_options[i].type == COAP_OPTION_NUM_URIPATH){
+      if(URIFound==FALSE &&  coap_options[i].type == COAP_OPTION_NUM_URIPATH){
     	   posURIPath=i;
-    	   URIFound=true;
+    	   URIFound=TRUE;
       }
    }
    
@@ -332,7 +332,6 @@ void opencoap_receive(OpenQueueEntry_t* msg) {
 */
 void opencoap_sendDone(OpenQueueEntry_t* msg, owerror_t error) {
    coap_resource_desc_t* temp_resource;
-   
    // take ownership over that packet
    msg->owner = COMPONENT_OPENCOAP;
    
@@ -381,7 +380,7 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
    // start with the first resource in the linked list
    temp_resource = opencoap_vars.resources;
    
-   bool is_write=false;
+   bool is_write=FALSE;
 
    // iterate through all resources
    while (temp_resource!=NULL) {
@@ -394,14 +393,14 @@ void opencoap_writeLinks(OpenQueueEntry_t* msg, uint8_t componentID) {
                ((componentID==temp_resource->componentID) && (temp_resource->path1len!=0))
             )
          ) {
-          if(is_write!=false){
+          if(is_write!=FALSE){
               // write separator between links
                  packetfunctions_reserveHeaderSize(msg,1);
                  msg->payload[0] = ',';
 
           }
           else{
-    	  is_write=true;
+    	  is_write=TRUE;
           }
          // write ending '>'
          packetfunctions_reserveHeaderSize(msg,1);
@@ -583,7 +582,6 @@ owerror_t opencoap_send(
    msg->payload[3]                  = (request->messageID>>0) & 0xff;
 
    memcpy(&msg->payload[4],&request->token[0],request->TKL); // A-K bugfix: it was only writing the first 2 bytes of token memcpy(&msg->payload[4],&token,request->TKL);
-
    return openudp_send(msg);
 }
 

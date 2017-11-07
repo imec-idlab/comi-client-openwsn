@@ -93,8 +93,9 @@ void          neighbors_removeOld(void);
 // debug
 bool          debugPrint_neighbors(void);
 
-
+// A-K
 neighbors_vars_t* schedule_getNeighbor_Vars(void);
+bool getNeighborAddressFromLastByte(open_addr_t* neighbor,uint8_t neighborLastByte);
 /**
 \}
 \}

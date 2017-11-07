@@ -47,6 +47,7 @@ void openbridge_triggerData() {
       //admin
       pkt->creator  = COMPONENT_OPENBRIDGE;
       pkt->owner    = COMPONENT_OPENBRIDGE;
+      pkt->l2_frameType = IEEE154_TYPE_PRIORITY;	// todo A-K put priority if it is priority!!!!
       //l2
       pkt->l2_nextORpreviousHop.type = ADDR_64B;
       memcpy(&(pkt->l2_nextORpreviousHop.addr_64b[0]),&(input_buffer[0]),8);

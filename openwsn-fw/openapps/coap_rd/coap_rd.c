@@ -17,14 +17,16 @@
 #ifndef COAP_DEVICE_TYPE
 #define COAP_DEVICE_TYPE 2
 #endif
+#define TO_HEX(i) (i <= 9 ? '0' + i : 'A' - 10 + i)
 
 static const 	uri_t URI_oma_rd[] = "rd";
 static const uint8_t ipAddr_rdserver[] = {0x20, 0x01, 0x06, 0xa8, 0x1d, 0x80, 0x11, 0x28, \
                                         0x02, 0x0d, 0xb9, 0xff, 0xfe, 0x40, 0x31, 0x14};
+
 //=========================== variables =======================================
 
 coap_rd_server_t coap_rd_server;
-
+uint8_t endpoint[6]="ep=  ";
 //=========================== prototypes ======================================
 
 
@@ -32,6 +34,11 @@ coap_rd_server_t coap_rd_server;
 
 void coap_rd_init() {
    if(idmanager_getIsDAGroot()==TRUE) return; 
+
+	uint8_t x = idmanager_getMyID(ADDR_64B)->addr_64b[7];
+	endpoint[3] = TO_HEX(((x & 0xF0) >> 4));
+	endpoint[4] = TO_HEX(((x & 0x0F) >> 0));
+
    memset(&coap_rd_server,0,sizeof(coap_rd_server_t));
    memcpy(&coap_rd_server.ipv6address[0], &ipAddr_rdserver, 16);
 
@@ -184,8 +191,6 @@ void coap_long_register_rd() {
 
 
       uint8_t myPayload[] = "</c>;rt=\"core.c\"";
-
-      openqueue_freePacketBuffer(pkt);
       packetfunctions_reserveHeaderSize(pkt,sizeof(myPayload)-1);
       memcpy(&pkt->payload[0],&myPayload,sizeof(myPayload)-1);
 

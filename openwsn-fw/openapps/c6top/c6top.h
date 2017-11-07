@@ -24,11 +24,6 @@
 //=========================== define ==========================================
 
 
-#define MAX_PAYLOAD_SIZE 				128
-
-#define COAP_PREF_BLOCK_SIZE            64
-
-
 //=========================== typedef =========================================
 
 typedef struct {
@@ -76,7 +71,7 @@ typedef struct {
 
 typedef struct {
    uint8_t       length;                         // length in bytes of the payload
-   uint8_t       cache[MAX_PAYLOAD_SIZE];            // 1B spi address, 1B length, 125B data, 2B CRC, 1B LQI
+   uint8_t       cache[MAX_COAP_PAYLOAD_SIZE];            // 1B spi address, 1B length, 125B data, 2B CRC, 1B LQI
 } payload_cache_t;
 
 typedef struct {
@@ -126,8 +121,9 @@ uint8_t comi_serialize_cell(uint8_t* comi_payload_curser, uint8_t cell_id);
 uint8_t comi_serialize_slotoffset(uint8_t* comi_payload_curser, sid_t baseSID, uint8_t cell_id);
 uint8_t comi_serialize_neighbor(uint8_t* comi_payload_curser, uint8_t neighbor_id);
 uint8_t comi_serialize_route(uint8_t* comi_payload_curser, uint8_t route_id);
+owerror_t comi_deserialize_cell(OpenQueueEntry_t* msg, scheduleEntry_t* cell, uint8_t* cellID, int baseSID);
 uint8_t get_linkoption(scheduleEntry_t* schedule);
-
+uint8_t get_cellType(uint8_t linkoption);
 void    c6top_sendDone(OpenQueueEntry_t* msg, owerror_t error);;
 
 #endif

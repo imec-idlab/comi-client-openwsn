@@ -12,10 +12,11 @@ idmanager_vars_t idmanager_vars;
 
 //=========================== prototypes ======================================
 
+
 //=========================== public ==========================================
 
 void idmanager_init() {
-   
+
    // reset local variables
    memset(&idmanager_vars, 0, sizeof(idmanager_vars_t));
    // this is used to not wakeup in non-activeslot
@@ -30,14 +31,14 @@ void idmanager_init() {
    
    // myPANID
    idmanager_vars.myPANID.type         = ADDR_PANID;
-   idmanager_vars.myPANID.panid[0]     = 0xca;
-   idmanager_vars.myPANID.panid[1]     = 0xfe;
+   idmanager_vars.myPANID.panid[0]     = 0xde;
+   idmanager_vars.myPANID.panid[1]     = 0xde;
 #ifdef PANID_DEFINED 
    idmanager_vars.myPANID.panid[0]     = PANID_DEFINED & 0x00ff;
    idmanager_vars.myPANID.panid[1]     =(PANID_DEFINED & 0xff00)>>8;
 #else
-   idmanager_vars.myPANID.panid[0]     = 0xca;
-   idmanager_vars.myPANID.panid[1]     = 0xfe;
+   idmanager_vars.myPANID.panid[0]     = 0xde;
+   idmanager_vars.myPANID.panid[1]     = 0xde;
 #endif
    // myPrefix
    idmanager_vars.myPrefix.type        = ADDR_PREFIX;

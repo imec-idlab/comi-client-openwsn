@@ -74,13 +74,14 @@ class build_py(_build_py):
 
 setup(
     name             = 'openVisualizer',
-    packages         = ['openvisualizer', 
+    packages         = ['openvisualizer',
                         'openvisualizer.BspEmulator', 'openvisualizer.eventBus', 
                         'openvisualizer.lbrClient', 'openvisualizer.moteConnector', 
                         'openvisualizer.moteProbe', 'openvisualizer.moteState', 
                         'openvisualizer.openLbr', 'openvisualizer.openTun', 
                         'openvisualizer.openType', 'openvisualizer.openUI',
-                        'openvisualizer.RPL', 'openvisualizer.SimEngine', 'openvisualizer.remoteConnectorServer'],
+                        'openvisualizer.RPL', 'openvisualizer.SimEngine', 'openvisualizer.remoteConnectorServer', 
+                        'openvisualizer.txthings'],
     scripts          = appdirGlob('openVisualizer*.py'),
     package_dir      = {'': '.', 'openvisualizer': 'openvisualizer'},
     # Copy simdata files by extension so don't copy .gitignore in that directory.

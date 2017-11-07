@@ -132,11 +132,9 @@ class OpenTunLinux(openTun.OpenTun):
         This function forwards the data to the the TUN interface.
         Read from tun interface and forward to 6lowPAN
         '''
-        
         # abort if not tun interface
         if not self.tunIf:
             return
-        
         # add tun header
         data  = VIRTUALTUNID + data
         
@@ -146,6 +144,7 @@ class OpenTunLinux(openTun.OpenTun):
         try:
             # write over tuntap interface
             os.write(self.tunIf, data)
+
             if log.isEnabledFor(logging.DEBUG):
                 log.debug("data dispatched to tun correctly {0}, {1}".format(signal,sender))
         except Exception as err:

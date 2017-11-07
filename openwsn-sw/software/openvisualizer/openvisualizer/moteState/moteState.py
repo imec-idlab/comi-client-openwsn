@@ -130,7 +130,7 @@ class StateOutputBuffer(StateElem):
 
 class StateAsn(StateElem):
     
-    def update(self,notif):
+    def update(self,notif):           
         StateElem.update(self)
         if len(self.data)==0:
             self.data.append({})
@@ -159,15 +159,18 @@ class StateMacStats(StateElem):
 
 class StateScheduleRow(StateElem):
 
-    def update(self,notif):
+    def update(self,notif):      
         StateElem.update(self)
         if len(self.data)==0:
             self.data.append({})
+        self.data[0]['cellID']              = notif.row
         self.data[0]['slotOffset']          = notif.slotOffset
         if 'type' not in self.data[0]:
             self.data[0]['type']            = typeCellType.typeCellType()
         self.data[0]['type'].update(notif.type)
         self.data[0]['shared']              = notif.shared
+        self.data[0]['isHard']              = notif.isHard
+        self.data[0]['label']              = notif.label
         self.data[0]['channelOffset']       = notif.channelOffset
         if 'neighbor' not in self.data[0]:
             self.data[0]['neighbor']        = typeAddr.typeAddr()
@@ -182,7 +185,7 @@ class StateScheduleRow(StateElem):
         self.data[0]['lastUsedAsn'].update(notif.lastUsedAsn_0_1,
                                            notif.lastUsedAsn_2_3,
                                            notif.lastUsedAsn_4)
-
+        
 class StateBackoff(StateElem):
     
     def update(self,notif):
@@ -268,7 +271,7 @@ class StateIsSync(StateElem):
 
 class StateIdManager(StateElem):
     
-    def __init__(self,eventBusClient,moteConnector):
+    def __init__(self,eventBusClient,moteConnector):            
         StateElem.__init__(self)
         self.eventBusClient  = eventBusClient
         self.moteConnector   = moteConnector
@@ -412,7 +415,8 @@ class moteState(eventBusClient.eventBusClient):
     
     TRIGGER_DAGROOT     = 'DAGroot'
     SET_COMMAND         = 'imageCommand'
-
+    COMI_COMMAND         = 'comiCommand'
+    
     # command for golgen image       name,             id length
     COMMAND_SET_EBPERIOD          = ['ebPeriod',       0, 1]
     COMMAND_SET_CHANNEL           = ['channel',        1, 1]
@@ -432,6 +436,8 @@ class moteState(eventBusClient.eventBusClient):
     COMMAND_SET_6PRESPONSE        = ['6pResponse',    15, 1]
     COMMAND_SET_UINJECTPERIOD     = ['uinjectPeriod', 16, 1]
     COMMAND_SET_ECHO_REPLY_STATUS = ['echoReply',     17, 1]
+    COMMAND_COMI_ADD              = ['comiAdd',       18, 6]
+    COMMAND_COMI_DELETE           = ['comiDelete',    19, 1]
     COMMAND_ALL                   = [
         COMMAND_SET_EBPERIOD ,
         COMMAND_SET_CHANNEL,
@@ -451,6 +457,8 @@ class moteState(eventBusClient.eventBusClient):
         COMMAND_SET_6PRESPONSE,
         COMMAND_SET_UINJECTPERIOD,
         COMMAND_SET_ECHO_REPLY_STATUS,
+        COMMAND_COMI_ADD,
+        COMMAND_COMI_DELETE,
     ]
 
     TRIGGER_ALL         = [
@@ -478,9 +486,12 @@ class moteState(eventBusClient.eventBusClient):
                                                 StateScheduleRow,
                                                 columnOrder = '.'.join(
                                                     [
+                                                        'cellID',
                                                         'slotOffset',
                                                         'type',
+                                                        'isHard',
                                                         'shared',
+                                                        'label',
                                                         'channelOffset',
                                                         'neighbor',
                                                         'numRx',
@@ -603,6 +614,7 @@ class moteState(eventBusClient.eventBusClient):
         
         # call handler
         found = False
+
         for k,v in self.notifHandlers.items():
             if self._isnamedtupleinstance(data,k):
                 found = True
@@ -613,6 +625,7 @@ class moteState(eventBusClient.eventBusClient):
         self.stateLock.release()
         
         if not found:
+            print('no_handler')
             raise SystemError("No handler for data {0}".format(data))
     
     def _isnamedtupleinstance(self,var,tupleInstance):

@@ -50,38 +50,79 @@ topology.
 \return TRUE if the packet can be received.
 \return FALSE if the packet should be silently dropped.
 */
+
+#define TOPOLOGY_MOTE1 0x38
+#define TOPOLOGY_MOTE2 0x8b
+#define TOPOLOGY_MOTE3 0xbe
+#define TOPOLOGY_MOTE4 0x22
+#define TOPOLOGY_MOTE5 0x55
+#define TOPOLOGY_MOTE6 0x2a
+#define TOPOLOGY_MOTE7 0x4e
+
+
 bool topology_isAcceptablePacket(ieee802154_header_iht* ieee802514_header) {
 #ifdef FORCETOPOLOGY
    bool returnVal;
    
    returnVal=FALSE;
    switch (idmanager_getMyID(ADDR_64B)->addr_64b[7]) {
-      case 0xdf:
+      case TOPOLOGY_MOTE1:
          if (
-               ieee802514_header->src.addr_64b[7]==0x66
+               ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE2 || ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE3
             ) {
             returnVal=TRUE;
          }
          break;
-      case 0x66:
+      case TOPOLOGY_MOTE2:
          if (
-               ieee802514_header->src.addr_64b[7]==0xdf ||
-               ieee802514_header->src.addr_64b[7]==0x4f
+        		 ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE1 ||
+				 ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE4 ||
+				 ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE5
             ) {
             returnVal=TRUE;
          }
          break;
-      case 0x4f:
+      case TOPOLOGY_MOTE3:
          if (
-               ieee802514_header->src.addr_64b[7]==0x66
+               ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE1
             ) {
             returnVal=TRUE;
          }
          break;   
+      case TOPOLOGY_MOTE4:
+         if (
+               ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE2 ||
+               ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE6 ||
+               ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE7
+            ) {
+            returnVal=TRUE;
+         }
+         break;
+      case TOPOLOGY_MOTE5:
+    	  if (
+    			  ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE2
+    	  ) {
+    		  returnVal=TRUE;
+    	  }
+    	  break;
+      case TOPOLOGY_MOTE6:
+    	  if (
+    			  ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE4
+    	  ) {
+    		  returnVal=TRUE;
+    	  }
+    	  break;
+      case TOPOLOGY_MOTE7:
+    	  if (
+    			  ieee802514_header->src.addr_64b[7]==TOPOLOGY_MOTE4
+    	  ) {
+    		  returnVal=TRUE;
+    	  }
+    	  break;
    }
    return returnVal;
 #else
-   return TRUE;
+	return TRUE;
 #endif
 }
 

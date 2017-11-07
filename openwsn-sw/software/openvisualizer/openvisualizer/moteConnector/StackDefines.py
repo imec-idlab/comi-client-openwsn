@@ -1,6 +1,6 @@
 # DO NOT EDIT DIRECTLY!
 # This file was generated automatically by GenStackDefines.py
-# on Fri, 07 Apr 2017 09:25:58
+# on Fri, 18 Aug 2017 10:35:42
 #
 
 components = {
@@ -50,6 +50,9 @@ components = {
   49: "LWM2M_TEMP",
   50: "LWM2M_HUM",
   51: "LWM2M_LED",
+  52: "COAP_RD",
+  53: "UFIRE",
+  54: "UMONITOR",
 }
 
 errorDescriptions = {
@@ -120,6 +123,15 @@ errorDescriptions = {
   65: "COMI message: {0} msg: {1}",
   66: "LWM2M message: {0} msg: {1}",
   67: "the coap is trying to send long packet: {0} (code location {1})",
+  68: "tx packet: @slot: {0} @f: {1}",
+  69: "rx packet: @slot: {0} @f: {1}",
+  70: "no such neighbor exists! addr: {0} {1}",
+  71: "comi is updating a cell. action: {0} cellID: {1}",
+  72: "6top request action: {0} pos: {1}",
+  73: "the cell {0} is already active {1}",
+  74: "received ufire message {0} {1}",
+  75: "cell selected hard:{0} labeled:{1}",
+  74: "received umonitor message {0} {1}",
 }
 
 sixtop_returncode = {

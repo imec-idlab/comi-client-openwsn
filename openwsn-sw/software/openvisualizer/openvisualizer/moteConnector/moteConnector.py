@@ -157,6 +157,18 @@ class moteConnector(eventBusClient.eventBusClient):
                 self._sendToMoteProbe(
                     dataToSend = dataToSend,
                 )
+            elif data['action'][0]==moteState.moteState.COMI_COMMAND:
+                with self.stateLock:
+                    [success,dataToSend] = self._commandToBytes(data['action'][1:])
+
+                if not success:
+                    return
+
+                # print dataToSend
+                # send command to GD image
+                self._sendToMoteProbe(
+                    dataToSend = dataToSend,
+                )
             else:
                 raise SystemError('unexpected action={0}'.format(data['action']))
     
@@ -174,6 +186,7 @@ class moteConnector(eventBusClient.eventBusClient):
                 break
             else:
                 commandIndex += 1
+
 
         # check avaliability of command
         if commandIndex == len(moteState.moteState.COMMAND_ALL):
@@ -198,6 +211,25 @@ class moteConnector(eventBusClient.eventBusClient):
                 print "Wrong 6p parameter format {0}. Split the slot by".format(data[1])
                 print "comma. e.g. 6,7. (up to 3)"
                 return [outcome,dataToSend]
+        elif data[0][:4] == 'comi':
+            try:
+                dataToSend = [OpenParser.OpenParser.SERFRAME_PC2MOTE_COMMAND,
+                    commandId,
+                    len(data[1:])
+                ]
+                if data[0] == 'comiAdd':
+                    if len(data[1:])>0:
+                        dataToSend += [int(i) for i in data[1:]]
+                elif data[0] == 'comiDelete':
+                    if len(data[1:])>0:
+                        dataToSend += [int(i) for i in data[1:]]
+                print(dataToSend)
+            except:
+                print "============================================="
+                print "Wrong comi parameter format"
+                print "e.g. 0 1 2 3 4 5. (up to 6)"
+                return [outcome,dataToSend]
+            
         else:
             parameter = int(data[1])
             if parameter <= 0xffff:
@@ -224,10 +256,13 @@ class moteConnector(eventBusClient.eventBusClient):
         assert len(data)==2
         
         (nextHop,lowpan) = data
-        
-        self._sendToMoteProbe(
-            dataToSend = [OpenParser.OpenParser.SERFRAME_PC2MOTE_DATA]+nextHop+lowpan,
-        )
+        if len(lowpan)<126: ###### A-K drop the packets larger than 126!!! 
+            self._sendToMoteProbe(
+                dataToSend = [OpenParser.OpenParser.SERFRAME_PC2MOTE_DATA]+nextHop+lowpan,
+            )
+        else:
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug("moteConnector: A packet is dropped due to its size: {0}".format(len(lowpan)))
     
     #======================== public ==========================================
     

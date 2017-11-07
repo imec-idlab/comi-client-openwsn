@@ -5,7 +5,7 @@
 # https://openwsn.atlassian.net/wiki/display/OW/License
 import logging
 log = logging.getLogger('ParserStatus')
-log.setLevel(logging.ERROR)
+log.setLevel(logging.DEBUG)
 log.addHandler(logging.NullHandler())
 
 import collections
@@ -127,12 +127,14 @@ class ParserStatus(Parser.Parser):
                                     3,
                                     6,
                                     'ScheduleRow',
-                                    '<BHBBBBQQBBBBHH',
+                                    '<BHBBBBBBQQBBBBHH',
                                     [
-                                        'row',                       # B
+                                        'row',                       # B                                      
                                         'slotOffset',                # H 
                                         'type',                      # B
+                                        'isHard',                    # B                                        
                                         'shared',                    # B
+                                        'label',                     # B
                                         'channelOffset',             # B
                                         'neighbor_type',             # B
                                         'neighbor_bodyH',            # Q
@@ -245,15 +247,15 @@ class ParserStatus(Parser.Parser):
         
         # jump the header bytes
         input = input[3:]
-        
+
         # call the next header parser
         for key in self.fieldsParsingKeys:
             if statusElem==key.val:
-            
+
                 # log
                 if log.isEnabledFor(logging.DEBUG):
                     log.debug("parsing {0}, ({1} bytes) as {2}".format(input,len(input),key.name))
-                
+
                 # parse byte array
                 try:
                     fields = struct.unpack(key.structure,''.join([chr(c) for c in input]))                     

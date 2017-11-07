@@ -343,17 +343,17 @@ void openserial_startOutput() {
                 break;
        //     }
         case STATUS_ASN:
-       //     if (debugPrint_asn()==TRUE) {
+            if (debugPrint_asn()==TRUE) {
                 break;
-        //    }
+            }
         case STATUS_MACSTATS:
        //     if (debugPrint_macStats()==TRUE) {
                 break;
        //     }
         case STATUS_SCHEDULE:
-      //      if(debugPrint_schedule()==TRUE) {
+            if(debugPrint_schedule()==TRUE) {
                 break;
-       //     }
+            }
         case STATUS_BACKOFF:
       //      if(debugPrint_backoff()==TRUE) {
                 break;
@@ -363,9 +363,9 @@ void openserial_startOutput() {
                 break;
        //     }
         case STATUS_NEIGHBORS:
-      //      if (debugPrint_neighbors()==TRUE) {
+            if (debugPrint_neighbors()==TRUE) {
                 break;
-      //      }
+            }
         case STATUS_KAPERIOD:
       //      if (debugPrint_kaPeriod()==TRUE) {
                 break;
@@ -542,6 +542,7 @@ void openserial_handleCommands(void){
    uint8_t  commandLen;
    uint8_t  comandParam_8;
    uint16_t comandParam_16;
+   uint8_t  comiCommandParam[6];
    cellInfo_ht cellList[SCHEDULEIEMAXNUMCELLS];
    uint8_t  i;
    
@@ -556,19 +557,28 @@ void openserial_handleCommands(void){
    commandId  = openserial_vars.inputBuf[1];
    commandLen = openserial_vars.inputBuf[2];
    
-   if (commandLen>3) {
+   if (commandLen>3 && commandLen!=6) { // I have added 6 since comiadd has 6 parameters
        // the max command Len is 2, except ping commands
        return;
    } else {
        if (commandLen == 1) {
            comandParam_8 = openserial_vars.inputBuf[3];
-       } else {
+       }
+       else if(commandLen == 6){
+    	   comiCommandParam[0] =openserial_vars.inputBuf[3];
+    	   comiCommandParam[1] =openserial_vars.inputBuf[4];
+    	   comiCommandParam[2] =openserial_vars.inputBuf[5];
+    	   comiCommandParam[3] =openserial_vars.inputBuf[6];
+    	   comiCommandParam[4] =openserial_vars.inputBuf[7];
+    	   comiCommandParam[5] =openserial_vars.inputBuf[8];
+       }
+       else {
            // commandLen == 2
            comandParam_16 = (openserial_vars.inputBuf[3]      & 0x00ff) | \
-                            ((openserial_vars.inputBuf[4]<<8) & 0xff00); 
+                            ((openserial_vars.inputBuf[4]<<8) & 0xff00);
        }
    }
-   
+
    switch(commandId) {
        case COMMAND_SET_EBPERIOD:
            sixtop_setEBPeriod(comandParam_8); // one byte, in seconds
@@ -687,6 +697,23 @@ void openserial_handleCommands(void){
                 }
             }
             break;
+       case COMMAND_COMI_ADD:
+
+    	   if(getNeighborAddressFromLastByte(&neighbor, comiCommandParam[5])==FALSE){
+    	   							openserial_printError(COMPONENT_OPENSERIAL,ERR_NO_NEIGHBOR,
+    	   							                               (errorparameter_t)comiCommandParam[5],
+    	   							                               (errorparameter_t)0);
+    	   }
+    	   else{
+    	   	   schedule_addActiveSlotByID(comiCommandParam[0],comiCommandParam[2],comiCommandParam[3],get_cellType(comiCommandParam[4]),TRUE,FALSE,get_Label(comiCommandParam[4]),&neighbor);
+
+    	   }
+		   break;
+       case COMMAND_COMI_DELETE:
+    	   if(schedule_getMaxActiveSlots()>comandParam_8){
+    		   schedule_removeActiveSlotByID(comandParam_8);
+    	   }
+    	   break;
        default:
            // wrong command ID
            break;

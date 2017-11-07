@@ -52,7 +52,7 @@ class Parser(object):
         # log
         if log.isEnabledFor(logging.DEBUG):
             log.debug("received input={0}".format(input))
-        
+
         # ensure input not short longer than header
         self._checkLength(input)
         

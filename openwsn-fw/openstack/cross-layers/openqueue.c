@@ -198,55 +198,84 @@ OpenQueueEntry_t* openqueue_sixtopGetReceivedPacket() {
 
 //======= called by IEEE80215E
 
-OpenQueueEntry_t* openqueue_macGetDataPacket(open_addr_t* toNeighbor) {
+OpenQueueEntry_t* openqueue_macGetDataPacket(open_addr_t* toNeighbor, uint8_t isHard, uint8_t label) {
    uint8_t i;
    INTERRUPT_DECLARATION();
    DISABLE_INTERRUPTS();
 
-    // first to look the sixtop RES packet
-    for (i=0;i<QUEUELENGTH;i++) {
-       if (
-           openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
-           openqueue_vars.queue[i].creator==COMPONENT_SIXTOP_RES &&
-           (
-               (
-                   toNeighbor->type==ADDR_64B &&
-                   packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
-               ) || toNeighbor->type==ADDR_ANYCAST
-           )
-       ){
-          ENABLE_INTERRUPTS();
-          return &openqueue_vars.queue[i];
-       }
-    }
-  
-   if (toNeighbor->type==ADDR_64B) {
-      // a neighbor is specified, look for a packet unicast to that neigbhbor
-      for (i=0;i<QUEUELENGTH;i++) {
-         if (openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
-            packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
-          ) {
-            ENABLE_INTERRUPTS();
-            return &openqueue_vars.queue[i];
-         }
-      }
-   } else if (toNeighbor->type==ADDR_ANYCAST) {
-      // anycast case: look for a packet which is either not created by RES
-      // or an KA (created by RES, but not broadcast)
-      for (i=0;i<QUEUELENGTH;i++) {
-         if (openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
-             ( openqueue_vars.queue[i].creator!=COMPONENT_SIXTOP ||
-                (
-                   openqueue_vars.queue[i].creator==COMPONENT_SIXTOP &&
-                   packetfunctions_isBroadcastMulticast(&(openqueue_vars.queue[i].l2_nextORpreviousHop))==FALSE
-                )
-             )
-            ) {
-            ENABLE_INTERRUPTS();
-            return &openqueue_vars.queue[i];
-         }
-      }
+   if(isHard==0){ // Soft Cells can be used by any purpose
+		// first to look the sixtop RES packet
+		for (i=0;i<QUEUELENGTH;i++) {
+		   if (openqueue_vars.queue[i].label==0 &&
+			   openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
+			   openqueue_vars.queue[i].creator==COMPONENT_SIXTOP_RES &&
+			   (
+				   (
+					   toNeighbor->type==ADDR_64B &&
+					   packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
+				   ) || toNeighbor->type==ADDR_ANYCAST
+			   )
+		   ){
+			  ENABLE_INTERRUPTS();
+			  return &openqueue_vars.queue[i];
+		   }
+		}
+		 if (toNeighbor->type==ADDR_64B) {
+		      // a neighbor is specified, look for a packet unicast to that neigbhbor
+		      for (i=0;i<QUEUELENGTH;i++) {
+		         if (openqueue_vars.queue[i].label==0 &&
+		        	 openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
+		             packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
+		          ) {
+		            ENABLE_INTERRUPTS();
+		            return &openqueue_vars.queue[i];
+		         }
+		      }
+		   } else if (toNeighbor->type==ADDR_ANYCAST) {
+		      // anycast case: look for a packet which is either not created by RES
+		      // or an KA (created by RES, but not broadcast)
+		      for (i=0;i<QUEUELENGTH;i++) {
+		         if (openqueue_vars.queue[i].label==0 &&
+		        		 openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
+		             ( openqueue_vars.queue[i].creator!=COMPONENT_SIXTOP ||
+		                (
+		                   openqueue_vars.queue[i].creator==COMPONENT_SIXTOP &&
+		                   packetfunctions_isBroadcastMulticast(&(openqueue_vars.queue[i].l2_nextORpreviousHop))==FALSE
+		                )
+		             )
+		            ) {
+		            ENABLE_INTERRUPTS();
+		            return &openqueue_vars.queue[i];
+		         }
+		      }
+		   }
    }
+   else{ // Hard Cells can be only used by application data
+	   if (toNeighbor->type==ADDR_64B) {
+	    	  if(label==0){
+	    		  // a neighbor is specified, look for a packet unicast to that neigbhbor created by application or forwarding messages
+	  		      for (i=0;i<QUEUELENGTH;i++) {
+	  		         if (openqueue_vars.queue[i].l2_frameType == IEEE154_TYPE_PRIORITY && openqueue_vars.queue[i].label==0 && (openqueue_vars.queue[i].creator > COMPONENT_SIXTOP_RES  || openqueue_vars.queue[i].creator == COMPONENT_IEEE802154E)&& openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
+	  		            packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
+	  		          ) {
+	  		            ENABLE_INTERRUPTS();
+	  		            return &openqueue_vars.queue[i];
+	  		         }
+	  		      }
+	    	  }
+	    	  else{
+	    		  for (i=0;i<QUEUELENGTH;i++) {
+	    			  if (openqueue_vars.queue[i].l2_frameType == IEEE154_TYPE_PRIORITY && openqueue_vars.queue[i].label == label && openqueue_vars.queue[i].owner==COMPONENT_SIXTOP_TO_IEEE802154E &&
+	    					  packetfunctions_sameAddress(toNeighbor,&openqueue_vars.queue[i].l2_nextORpreviousHop)
+	    			  ) {
+	    				  ENABLE_INTERRUPTS();
+	    				  return &openqueue_vars.queue[i];
+	    			  }
+	    		  }
+	    	  }
+	  	}
+   }
+
    ENABLE_INTERRUPTS();
    return NULL;
 }
@@ -293,6 +322,7 @@ void openqueue_reset_entry(OpenQueueEntry_t* entry) {
    entry->owner                        = COMPONENT_NULL;
    entry->payload                      = &(entry->packet[127 - IEEE802154_SECURITY_TAG_LEN]); // Footer is longer if security is used
    entry->length                       = 0;
+   entry->label                        = 0;
    //l4
    entry->l4_protocol                  = IANA_UNDEFINED;
    entry->l4_protocol_compressed       = FALSE;

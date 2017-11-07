@@ -15,19 +15,22 @@
 /**
 \brief The length of the superframe, in slots.
 
-The superframe repears over time and can be arbitrarly long.
+The superframe repeats over time and can be arbitrarly long.
 */
-#define SLOTFRAME_LENGTH    11 //should be 101
+#define SLOTFRAME_LENGTH    21 //should be 101
 
 //draft-ietf-6tisch-minimal-06
-#define SCHEDULE_MINIMAL_6TISCH_ACTIVE_CELLS                      1
+#define SCHEDULE_MINIMAL_6TISCH_ACTIVE_CELLS                      2
 #define SCHEDULE_MINIMAL_6TISCH_SLOTOFFSET                        0
 #define SCHEDULE_MINIMAL_6TISCH_CHANNELOFFSET                     0
 #define SCHEDULE_MINIMAL_6TISCH_DEFAULT_SLOTFRAME_HANDLE          1 //id of slotframe
 #define SCHEDULE_MINIMAL_6TISCH_DEFAULT_SLOTFRAME_NUMBER          1 //1 slotframe by default.
 
-#define NUMSERIALRX          3
-
+#ifdef DAGROOT
+#define NUMSERIALRX          4
+#else
+#define NUMSERIALRX          1//0
+#endif
 /*
   NUMSLOTSOFF is the max number of cells that the mote can add into schedule, 
   besides 6TISCH_ACTIVE_CELLS and NUMSERIALRX Cell. Initially those cells are 
@@ -39,8 +42,14 @@ The superframe repears over time and can be arbitrarly long.
   for seiral port to tranmit data to dagroot. 
 */
 
-#define NUMSLOTSOFF          5
-
+#ifdef DAGROOT
+#define NUMSLOTSOFF          10
+#else
+#define NUMSLOTSOFF          17//8
+#endif
+/*
+ *
+ */
 /**
 \brief Maximum number of active slots in a superframe.
 
@@ -93,7 +102,9 @@ typedef enum {
 typedef struct {
    slotOffset_t    slotOffset;
    cellType_t      type;
+   bool   		   isHard;
    bool            shared;
+   uint8_t		   label;
    uint8_t         channelOffset;
    open_addr_t     neighbor;
    uint8_t         numRx;
@@ -108,7 +119,9 @@ typedef struct {
    uint8_t         row;
    slotOffset_t    slotOffset;
    uint8_t         type;
+   bool   		   isHard;
    bool            shared;
+   uint8_t		   label;
    uint8_t         channelOffset;
    open_addr_t     neighbor;
    uint8_t         numRx;
@@ -121,7 +134,9 @@ END_PACK
 typedef struct {
   uint8_t          address[LENGTH_ADDR64b];
   cellType_t       link_type;
+  bool   		   isHard;
   bool             shared;
+  uint8_t		   label;
   slotOffset_t     slotOffset;
   channelOffset_t  channelOffset;
 }slotinfo_element_t;
@@ -155,7 +170,9 @@ void               schedule_setFrameNumber(uint8_t frameNumber);
 owerror_t          schedule_addActiveSlot(
    slotOffset_t         slotOffset,
    cellType_t           type,
+   bool 				isHard,
    bool                 shared,
+   uint8_t				label,
    uint8_t              channelOffset,
    open_addr_t*         neighbor
 );
@@ -183,7 +200,7 @@ void              schedule_removeAllCells(
    open_addr_t*   previousHop
 );
 scheduleEntry_t*  schedule_getCurrentScheduleEntry(void);
-uint8_t           schedule_getNumOfSlotsByType(cellType_t type);
+uint8_t           schedule_getNumOfSlotsByType(cellType_t type, bool isHard);
 uint8_t           schedule_getNumberOfFreeEntries(void);
 // from IEEE802154E
 void               schedule_syncSlotOffset(slotOffset_t targetSlotOffset);
@@ -206,8 +223,14 @@ void               schedule_indicateTx(
 void               schedule_housekeeping(void);
 void		       schedule_remove_allTXandRX_Cells(void);
 owerror_t 		   schedule_removeActiveSlotByID(uint8_t cellID);
-owerror_t 			schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset,channelOffset_t channelOffset, cellType_t type, bool shared,open_addr_t* neighbor);
+owerror_t 			schedule_addActiveSlotByID(uint8_t cellID, slotOffset_t slotOffset,channelOffset_t channelOffset, cellType_t type, bool isHard, bool shared,uint8_t label, open_addr_t* neighbor);
 schedule_vars_t* 	schedule_getSchedule_Vars(void);
+bool schedule_isCellAlreadyInSchedule(scheduleEntry_t* targetSchedule);
+bool schedule_isSlotOffsetHardAvailable(uint16_t slotOffset);
+void insertInTheSchedule(scheduleEntry_t* slotContainer);
+uint8_t schedule_getisHard(void);
+uint8_t schedule_getLabel(void);
+
 /**
 \}
 \}

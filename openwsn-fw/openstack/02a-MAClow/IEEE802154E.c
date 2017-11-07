@@ -24,6 +24,7 @@ ieee154e_stats_t   ieee154e_stats;
 ieee154e_dbg_t     ieee154e_dbg;
 
 //=========================== prototypes ======================================
+void (*frame_start_cb)(void);
 
 // SYNCHRONIZING
 void     activity_synchronize_newSlot(void);
@@ -119,6 +120,8 @@ void ieee154e_init() {
    ieee154e_vars.slotDuration      = TsSlotDuration;
    ieee154e_vars.numOfSleepSlots   = 1;
    
+   frame_start_cb=NULL;
+
    // default hopping template
    memcpy(
        &(ieee154e_vars.chTemplate[0]),
@@ -536,7 +539,8 @@ port_INLINE void activity_synchronize_endOfFrame(PORT_RADIOTIMER_WIDTH capturedT
    // declare ownership over that packet
    ieee154e_vars.dataReceived->creator = COMPONENT_IEEE802154E;
    ieee154e_vars.dataReceived->owner   = COMPONENT_IEEE802154E;
-   
+   ieee154e_vars.dataReceived->label   = schedule_getLabel();
+
    /*
    The do-while loop that follows is a little parsing trick.
    Because it contains a while(0) condition, it gets executed only once.
@@ -837,9 +841,13 @@ port_INLINE void activity_ti1ORri1() {
    incrementAsnOffset();
    
    // wiggle debug pins
-   debugpins_slot_toggle();
+  // debugpins_slot_toggle();
    if (ieee154e_vars.slotOffset==0) {
-      debugpins_frame_toggle();
+      //debugpins_frame_toggle();
+	    if(frame_start_cb != NULL) {
+	    	frame_start_cb();
+	    }
+
    }
    
    // desynchronize if needed
@@ -931,7 +939,9 @@ port_INLINE void activity_ti1ORri1() {
          // check whether we can send
          if (schedule_getOkToSend()) {
             schedule_getNeighbor(&neighbor);
-            ieee154e_vars.dataToSend = openqueue_macGetDataPacket(&neighbor);
+            uint8_t isHard =schedule_getisHard();
+            uint8_t label  =schedule_getLabel();
+            ieee154e_vars.dataToSend = openqueue_macGetDataPacket(&neighbor,isHard, label);
             if ((ieee154e_vars.dataToSend==NULL) && (cellType==CELLTYPE_TXRX)) {
                couldSendEB=TRUE;
                // look for an EB packet in the queue
@@ -960,6 +970,7 @@ port_INLINE void activity_ti1ORri1() {
             }
             // record that I attempt to transmit this packet
             ieee154e_vars.dataToSend->l2_numTxAttempts++;
+
 #ifdef SLOT_FSM_IMPLEMENTATION_MULTIPLE_TIMER_INTERRUPT
             // 1. schedule timer for loading packet
             radiotimer_schedule(ACTION_LOAD_PACKET,      DURATION_tt1);
@@ -1109,6 +1120,8 @@ port_INLINE void activity_ti2() {
     // enable the radio in Tx mode. This does not send the packet.
     radio_txEnable();
 
+    // A-K
+    //openserial_printError(COMPONENT_IEEE802154E,ERR_INFO_TRANSMIT,(errorparameter_t)ieee154e_vars.slotOffset, (errorparameter_t)ieee154e_vars.freq);
 
     ieee154e_vars.radioOnInit=radio_getTimerValue();
     ieee154e_vars.radioOnThisSlot=TRUE;
@@ -1597,11 +1610,13 @@ port_INLINE void activity_ri5(PORT_RADIOTIMER_WIDTH capturedTime) {
       endSlot();
       return;
    }
-   
+   // A-K
+   //openserial_printError(COMPONENT_IEEE802154E,ERR_INFO_RECV,(errorparameter_t)ieee154e_vars.slotOffset, (errorparameter_t)ieee154e_vars.freq);
+
    // declare ownership over that packet
    ieee154e_vars.dataReceived->creator = COMPONENT_IEEE802154E;
    ieee154e_vars.dataReceived->owner   = COMPONENT_IEEE802154E;
-
+   ieee154e_vars.dataReceived->label   = schedule_getLabel();
    /*
    The do-while loop that follows is a little parsing trick.
    Because it contains a while(0) condition, it gets executed only once.
@@ -1987,7 +2002,8 @@ port_INLINE bool isValidRxFrame(ieee802154_header_iht* ieee802514_header) {
    return ieee802514_header->valid==TRUE                                                           && \
           (
              ieee802514_header->frameType==IEEE154_TYPE_DATA                   ||
-             ieee802514_header->frameType==IEEE154_TYPE_BEACON
+             ieee802514_header->frameType==IEEE154_TYPE_BEACON				   ||
+			 ieee802514_header->frameType==IEEE154_TYPE_PRIORITY
           )                                                                                        && \
           packetfunctions_sameAddress(&ieee802514_header->panid,idmanager_getMyID(ADDR_PANID))     && \
           (
@@ -2309,6 +2325,7 @@ void changeIsSync(bool newIsSync) {
 //======= notifying upper layer
 
 void notif_sendDone(OpenQueueEntry_t* packetSent, owerror_t error) {
+
    // record the outcome of the trasmission attempt
    packetSent->l2_sendDoneError   = error;
    // record the current ASN

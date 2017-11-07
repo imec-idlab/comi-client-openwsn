@@ -421,7 +421,9 @@ port_INLINE void processIE_retrieveSlotframeLinkIE(
             schedule_addActiveSlot(
                linkInfo.tsNum,                     // slot offset
                CELLTYPE_TXRX,                      // type of slot
+			   FALSE,							   // isHard?
                TRUE,                               // shared?
+			   0,								   // label
                linkInfo.choffset,                  // channel offset
                &temp_neighbor                      // neighbor
             );
