@@ -1,0 +1,31 @@
+scons: Reading SConscript files ...
+
+ ___                 _ _ _  ___  _ _ 
+| . | ___  ___ ._ _ | | | |/ __>| \ |
+| | || . \/ ._>| ' || | | |\__ \|   |
+`___'|  _/\___.|_|_||__/_/ <___/|_\_|
+     |_|                  openwsn.org
+
+scons: done reading SConscript files.
+scons: Building targets ...
+Delete("build/runui/web_files")
+Mkdir("/home/akaraagac/TSCH/openWSN/openwsn-sw/software/openvisualizer/build/runui")
+Copy("build/runui/web_files", "bin/openVisualizerApp/web_files")
+Delete("build/runui/sim_files")
+Mkdir("/home/akaraagac/TSCH/openWSN/openwsn-sw/software/openvisualizer/build/runui")
+Copy("build/runui/sim_files", "bin/openVisualizerApp/sim_files")
+uiRunner(["bin/openVisualizerApp/openVisualizerCli"], ["bin/openVisualizerApp/openVisualizerCli.py"])
+:0: UserWarning: You do not have a working installation of the service_identity module: 'No module named service_identity'.  Please install it from <https://pypi.python.org/pypi/service_identity> and make sure all of its dependencies are satisfied.  Without the service_identity module, Twisted can perform only rudimentary TLS client hostname verification.  Many valid certificate/hostname mappings may be rejected.
+ioctl(TUNSETIFF): Device or resource busy
+48: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500
+    link/none 
+    inet6 bbbb::1/64 scope global 
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1/64 scope link 
+       valid_lft forever preferred_lft forever
+13:24:23 INFO create instance
+13:24:23 INFO create instance
+13:24:23 INFO create instance
+13:24:23 INFO create instance
+13:24:23 INFO create instance
+13:24:23 INFO create instance
