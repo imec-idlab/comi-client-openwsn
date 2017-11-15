@@ -25,6 +25,7 @@
 #include "uecho.h"
 #include "uinject.h"
 #include "ufirealarm.h"
+#include "upiano.h"
 #include "umonitor.h"
 
 //=========================== variables =======================================
@@ -46,7 +47,8 @@ void openapps_init(void) {
    //csensors_init();
    cwellknown_init();
   // ufirealarm_init();
-   umonitor_init();
+  // umonitor_init();
+   upiano_init();
   // rrt_init();
    // TCP
   // techo_init();

@@ -97,8 +97,9 @@ enum {
    WKP_UDP_COAP                        =    5683,
    WKP_UDP_ECHO                        =       7,
    WKP_UDP_INJECT                      =   61617,// 0xf0b1
-   WKP_UDP_MONITOR                        =   20001,
+   WKP_UDP_MONITOR                     =   20001,
    WKP_UDP_FIRE                        =   20002,
+   WKP_UDP_PIANO                       =   20003,
    WKP_UDP_RINGMASTER                  =   15000,
    WKP_UDP_SERIALBRIDGE                =    2001,
 };
@@ -185,6 +186,7 @@ enum {
    COMPONENT_COAP_RD                 	= 0x34,
    COMPONENT_UFIRE        	        	= 0x35,
    COMPONENT_UMONITOR					=0x36,
+   COMPONENT_UPIANO					=0x37,
 };
 
 /**
@@ -276,7 +278,8 @@ enum {
    ERR_CELL_ACTIVE       				= 0x49, // the cell {0} is already active {1}
    ERR_RECV_UFIRE_MESSAGE       		= 0x4a, // received ufire message {0} {1}
    ERR_CELL_SELECTED 		     		= 0x4b, // cell selected hard:{0} labeled:{1}
-   ERR_RECV_UMONITOR_MESSAGE       		= 0x4a, // received umonitor message {0} {1}
+   ERR_RECV_UMONITOR_MESSAGE       		= 0x4c, // received umonitor message {0} {1}
+   ERR_RECV_UPIANO_MESSAGE       		= 0x4d, // received upiano message {0} {1}
 };
 
 //=========================== typedef =========================================
