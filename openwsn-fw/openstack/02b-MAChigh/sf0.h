@@ -11,6 +11,10 @@
 #include "opendefs.h"
 
 //=========================== define ==========================================
+/***
+ * A-K Created Definition
+ * */
+#define SF0_BANDWIDTH_ESTIMATE FALSE //Enable/Disable Bandwidth estimate function in sf0
 
 //=========================== typedef =========================================
 

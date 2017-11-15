@@ -113,52 +113,66 @@ void sf0_bandwidthEstimate_task(void){
     if (foundNeighbor==FALSE) {
         return;
     }
-    
-    // get bandwidth of outgoing, incoming and self.
-    // Here we just calculate the estimated bandwidth for 
-    // the application sending on dedicate cells(TX or Rx).
-    // A-K but only for soft cells
-    bw_outgoing = schedule_getNumOfSlotsByType(CELLTYPE_TX, FALSE);
-    bw_incoming = schedule_getNumOfSlotsByType(CELLTYPE_RX, FALSE);
-    
-    // get self required bandwith, you can design your
-    // application and assign bw_self accordingly. 
-    // for example:
-    //    bw_self = application_getBandwdith(app_name);
-    // By default, it's set to zero.
-    // bw_self = openapps_getBandwidth(COMPONENT_UINJECT);
-    bw_self = sf0_vars.numAppPacketsPerSlotFrame;
-    
-    // In SF0, scheduledCells = bw_outgoing
-    //         requiredCells  = bw_incoming + bw_self
-    // when scheduledCells<requiredCells, add one or more cell
-    
-    if (bw_outgoing <= bw_incoming+bw_self){
-        if (sixtop_setHandler(SIX_HANDLER_SF0)==FALSE){
-            // one sixtop transcation is happening, only one instance at one time
-            return;
-        }
-        sixtop_request(
-            IANA_6TOP_CMD_ADD,
-            &neighbor,
-            bw_incoming+bw_self-bw_outgoing+1
-        );
-    } else {
-        // remove cell(s)
-        if ( (bw_incoming+bw_self) < (bw_outgoing-SF0THRESHOLD)) {
-            if (sixtop_setHandler(SIX_HANDLER_SF0)==FALSE){
-               // one sixtop transcation is happening, only one instance at one time
-               return;
-            }
-            sixtop_request(
-                IANA_6TOP_CMD_DELETE,
-                &neighbor,
-                SF0THRESHOLD
-            );
-        } else {
-            // nothing to do
-        }
+
+    if(SF0_BANDWIDTH_ESTIMATE){ // A-K
+    	// get bandwidth of outgoing, incoming and self.
+    	    // Here we just calculate the estimated bandwidth for
+    	    // the application sending on dedicate cells(TX or Rx).
+    	    // A-K but only for soft cells
+    	    bw_outgoing = schedule_getNumOfSlotsByType(CELLTYPE_TX, FALSE);
+    	    bw_incoming = schedule_getNumOfSlotsByType(CELLTYPE_RX, FALSE);
+
+    	    // get self required bandwith, you can design your
+    	    // application and assign bw_self accordingly.
+    	    // for example:
+    	    //    bw_self = application_getBandwdith(app_name);
+    	    // By default, it's set to zero.
+    	    // bw_self = openapps_getBandwidth(COMPONENT_UINJECT);
+    	    bw_self = sf0_vars.numAppPacketsPerSlotFrame;
+
+    	    // In SF0, scheduledCells = bw_outgoing
+    	    //         requiredCells  = bw_incoming + bw_self
+    	    // when scheduledCells<requiredCells, add one or more cell
+
+    	    if (bw_outgoing <= bw_incoming+bw_self){
+    	        if (sixtop_setHandler(SIX_HANDLER_SF0)==FALSE){
+    	            // one sixtop transcation is happening, only one instance at one time
+    	            return;
+    	        }
+    	        sixtop_request(
+    	            IANA_6TOP_CMD_ADD,
+    	            &neighbor,
+    	            bw_incoming+bw_self-bw_outgoing+1
+    	        );
+    	    } else {
+    	        // remove cell(s)
+    	        if ( (bw_incoming+bw_self) < (bw_outgoing-SF0THRESHOLD)) {
+    	            if (sixtop_setHandler(SIX_HANDLER_SF0)==FALSE){
+    	               // one sixtop transcation is happening, only one instance at one time
+    	               return;
+    	            }
+    	            sixtop_request(
+    	                IANA_6TOP_CMD_DELETE,
+    	                &neighbor,
+    	                SF0THRESHOLD
+    	            );
+    	        } else {
+    	            // nothing to do
+    	        }
+    	    }
     }
+    else{ // A-K
+    	bw_outgoing = schedule_getNumOfSlotsByType(CELLTYPE_TX, FALSE);
+    	if (bw_outgoing < 1){
+    		if (sixtop_setHandler(SIX_HANDLER_SF0)==FALSE){
+    			// one sixtop transcation is happening, only one instance at one time
+    			return;
+    		}
+    		sixtop_request(
+    				IANA_6TOP_CMD_ADD,
+					&neighbor,1);
+    	}}
+
 }
 
 void sf0_appPktPeriod(uint8_t numAppPacketsPerSlotFrame){
