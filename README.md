@@ -5,7 +5,7 @@ This repository contains the end device related code for the paper *[Hybrid sche
 If you use this repository, please cite our paper:
 
 ### BIBTEX ###
-'''
+```
 @ARTICLE{8390881,  
     author={Karaagac, Abdulkadir and Moerman, Ingrid and Hoebeke, Jeroen},  
     journal={IEEE Access},   
@@ -19,7 +19,7 @@ If you use this repository, please cite our paper:
     doi={10.1109/ACCESS.2018.2849090},  
     ISSN={2169-3536},  
 }
-'''
+```
 
 ### MLA ###
 > Karaağaç, Abdulkadir, Ingrid Moerman, and Jeroen Hoebeke. “Hybrid Schedule Management in 6TiSCH Networks : the Coexistence of Determinism and Flexibility.” IEEE ACCESS 6 (2018): 33941–33952. Print.
